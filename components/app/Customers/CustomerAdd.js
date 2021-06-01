@@ -1,38 +1,100 @@
-import React, {useState, useEffect} from 'react';
+import React from 'react';
 import {Formik} from 'formik';
 import {ScrollView, View, Text, StyleSheet, SafeAreaView} from 'react-native';
 import {TextInput, Button} from 'react-native-paper';
-import colors from '../../../config/colors';
+import {userAtom} from '../../../Atoms';
+import {useAtom} from 'jotai';
+import Toast from 'react-native-toast-message';
+import Realm from 'realm';
+import CustomerSchema from '../../../Realm/CustomerSchema';
 import {theme} from '../../../config/theme';
 import commonStyles from '../../../assets/styles/common';
 import CustomerValidationSchema from '../../../helpers/forms/CustomerValidation';
 
-const initialValues = {
-  customerCode: '',
-  customerName: '',
-  contactPerson: '',
-  group: '',
-  email: '',
-  mobileNumber: '',
-  phoneNumber: '',
-  address_line_1: '',
-  address_line_2: '',
-  address_line_3: '',
-  city: '',
-  state: '',
-  pincode: '',
-  gst: '',
-  remarks: '',
-};
-
 function CustomerAdd(props) {
+  const initialValues = {
+    customerCode: props.item.code || '',
+    customerName: props.item.name || '',
+    contactPerson: props.item.contactPerson || '',
+    group: props.item.groupId || '',
+    email: props.item.email || '',
+    mobileNumber: props.item.mobileNumber || '',
+    phoneNumber: props.item.phoneNumber || '',
+    address_line_1: props.item.addressLine1 || '',
+    address_line_2: props.item.addressLine2 || '',
+    address_line_3: props.item.addressLine3 || '',
+    city: props.item.city || '',
+    state: props.item.state || '',
+    pincode: props.item.pincode || '',
+    gst: props.item.gstNo || '',
+    remarks: props.item.remarks || '',
+  };
+  const [user] = useAtom(userAtom);
+  const saveCustomer = async (values, setSubmitting) => {
+    setSubmitting(false);
+    let realm = null;
+    try {
+      realm = await Realm.open({
+        path: 'myrealm',
+        schema: [CustomerSchema],
+      });
+      let custObj = {
+        _id: Realm.BSON.ObjectId().toHexString(),
+        id: -1,
+        code: values.customerCode,
+        name: values.customerName,
+        email: values.email,
+        addressLine1: values.address_line_1,
+        addressLine2: values.address_line_2,
+        addressLine3: values.address_line_3,
+        city: values.city,
+        state: values.state,
+        country: 'India',
+        pincode: values.pincode,
+        groupId: values.group,
+        phoneNumber: values.phoneNumber,
+        mobileNumber: values.mobileNumber,
+        contactPerson: values.contactPerson,
+        gstNo: values.gst,
+        addedBy: user?.name,
+        remarks: values.remarks,
+      };
+      if (props.item.id) {
+        custObj.changedBy = user?.name;
+      }
+      realm.write(() => {
+        realm.create('Customer', custObj, 'modified');
+      });
+      Toast.show({
+        text2: 'Customer Added',
+        type: 'success',
+        position: 'bottom',
+      });
+      setSubmitting(false);
+      realm.close();
+      props.navigation.navigate.goBack();
+    } catch (error) {
+      Toast.show({
+        text2: 'Error Adding Customer',
+        type: 'error',
+        position: 'bottom',
+      });
+      setSubmitting(false);
+      if (realm) {
+        realm.close();
+      }
+    }
+  };
+
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.container}>
         <Formik
           initialValues={initialValues}
           validationSchema={CustomerValidationSchema}
-          onSubmit={(values, {setSubmitting}) => {}}>
+          onSubmit={(values, {setSubmitting}) => {
+            saveCustomer(values, setSubmitting);
+          }}>
           {({
             values,
             errors,
@@ -49,7 +111,7 @@ function CustomerAdd(props) {
                 mode="outlined"
                 style={commonStyles.textField}
                 label="Customer Code"
-                onChangeText={val => handleChange('customerCode')(val)}
+                onChangeText={(val) => handleChange('customerCode')(val)}
                 onBlur={handleBlur('customerCode')}
                 value={values.customerCode}
               />
@@ -61,7 +123,7 @@ function CustomerAdd(props) {
                 mode="outlined"
                 style={commonStyles.textField}
                 label="Customer Name"
-                onChangeText={val => handleChange('customerName')(val)}
+                onChangeText={(val) => handleChange('customerName')(val)}
                 onBlur={handleBlur('customerName')}
                 value={values.customerName}
               />
@@ -73,7 +135,7 @@ function CustomerAdd(props) {
                 mode="outlined"
                 style={commonStyles.textField}
                 label="Customer Group"
-                onChangeText={val => handleChange('group')(val)}
+                onChangeText={(val) => handleChange('group')(val)}
                 onBlur={handleBlur('group')}
                 value={values.group}
               />
@@ -85,7 +147,7 @@ function CustomerAdd(props) {
                 mode="outlined"
                 style={commonStyles.textField}
                 label="Contact Person"
-                onChangeText={val => handleChange('contactPerson')(val)}
+                onChangeText={(val) => handleChange('contactPerson')(val)}
                 onBlur={handleBlur('contactPerson')}
                 value={values.contactPerson}
               />
@@ -94,7 +156,7 @@ function CustomerAdd(props) {
                 mode="outlined"
                 style={commonStyles.textField}
                 label="Email"
-                onChangeText={val => handleChange('email')(val)}
+                onChangeText={(val) => handleChange('email')(val)}
                 onBlur={handleBlur('email')}
                 value={values.email}
               />
@@ -106,7 +168,7 @@ function CustomerAdd(props) {
                 mode="outlined"
                 style={commonStyles.textField}
                 label="Mobile Number"
-                onChangeText={val => handleChange('mobileNumber')(val)}
+                onChangeText={(val) => handleChange('mobileNumber')(val)}
                 onBlur={handleBlur('mobileNumber')}
                 value={values.mobileNumber}
               />
@@ -118,7 +180,7 @@ function CustomerAdd(props) {
                 mode="outlined"
                 style={commonStyles.textField}
                 label="Phone Number"
-                onChangeText={val => handleChange('phoneNumber')(val)}
+                onChangeText={(val) => handleChange('phoneNumber')(val)}
                 onBlur={handleBlur('phoneNumber')}
                 value={values.phoneNumber}
               />
@@ -127,7 +189,7 @@ function CustomerAdd(props) {
                 mode="outlined"
                 style={commonStyles.textField}
                 label="Addresss Line 1"
-                onChangeText={val => handleChange('address_line_1')(val)}
+                onChangeText={(val) => handleChange('address_line_1')(val)}
                 onBlur={handleBlur('address_line_1')}
                 value={values.address_line_1}
               />
@@ -136,7 +198,7 @@ function CustomerAdd(props) {
                 mode="outlined"
                 style={commonStyles.textField}
                 label="Address Line 2"
-                onChangeText={val => handleChange('address_line_2')(val)}
+                onChangeText={(val) => handleChange('address_line_2')(val)}
                 onBlur={handleBlur('address_line_2')}
                 value={values.address_line_2}
               />
@@ -145,7 +207,7 @@ function CustomerAdd(props) {
                 mode="outlined"
                 style={commonStyles.textField}
                 label="Address Line 3"
-                onChangeText={val => handleChange('address_line_3')(val)}
+                onChangeText={(val) => handleChange('address_line_3')(val)}
                 onBlur={handleBlur('address_line_3')}
                 value={values.address_line_3}
               />
@@ -154,7 +216,7 @@ function CustomerAdd(props) {
                 mode="outlined"
                 style={commonStyles.textField}
                 label="City"
-                onChangeText={val => handleChange('city')(val)}
+                onChangeText={(val) => handleChange('city')(val)}
                 onBlur={handleBlur('city')}
                 value={values.city}
               />
@@ -163,7 +225,7 @@ function CustomerAdd(props) {
                 mode="outlined"
                 style={commonStyles.textField}
                 label="State"
-                onChangeText={val => handleChange('state')(val)}
+                onChangeText={(val) => handleChange('state')(val)}
                 onBlur={handleBlur('state')}
                 value={values.state}
               />
@@ -172,7 +234,7 @@ function CustomerAdd(props) {
                 mode="outlined"
                 style={commonStyles.textField}
                 label="Pincode"
-                onChangeText={val => handleChange('pincode')(val)}
+                onChangeText={(val) => handleChange('pincode')(val)}
                 onBlur={handleBlur('pincode')}
                 value={values.pincode}
               />
@@ -181,7 +243,7 @@ function CustomerAdd(props) {
                 mode="outlined"
                 style={commonStyles.textField}
                 label="GST No"
-                onChangeText={val => handleChange('gst')(val)}
+                onChangeText={(val) => handleChange('gst')(val)}
                 onBlur={handleBlur('gst')}
                 value={values.gst}
               />
@@ -191,7 +253,7 @@ function CustomerAdd(props) {
                 multiline
                 style={commonStyles.textField}
                 label="Remarks"
-                onChangeText={val => handleChange('remarks')(val)}
+                onChangeText={(val) => handleChange('remarks')(val)}
                 onBlur={handleBlur('remarks')}
                 value={values.remarks}
               />

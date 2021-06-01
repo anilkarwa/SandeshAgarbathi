@@ -6,30 +6,28 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
+import _ from 'lodash';
 import {Avatar} from 'react-native-paper';
 import {theme} from '../../../config/theme';
 import Icons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-function CustomerItems(props) {
+function ItemDetails(props) {
   const {item, selected} = props;
   return (
-    <View style={styles.container}>
+    <View style={styles.container} key={item._id}>
       <TouchableOpacity
         style={[styles.details]}
         onPress={() => props.onItemClick(item)}>
-        <View>
-          <Avatar.Image
-            size={50}
-            source={require('../../../assets/images/user.png')}
-          />
-        </View>
         <View style={styles.infoContainer}>
           <Text numberOfLines={1} style={styles.name}>
             {item.name}
           </Text>
           <View style={styles.otherDetailsFlex}>
             <Text numberOfLines={1} style={styles.otherDetails}>
-              {item.price}
+              Rate: {item.rate}
+            </Text>
+            <Text numberOfLines={1} style={styles.otherDetails}>
+              Disc: {item.discount}
             </Text>
           </View>
         </View>
@@ -47,7 +45,11 @@ function CustomerItems(props) {
   );
 }
 
-export default CustomerItems;
+export default React.memo(ItemDetails, shouldComponentUpdate);
+
+const shouldComponentUpdate = (preProps, nextProps) => {
+  return _.isEqual(preProps.item, nextProps.item);
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -64,10 +66,10 @@ const styles = StyleSheet.create({
     elevation: 7,
   },
   details: {
-    flex: 1,
     padding: 10,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   selected: {
     backgroundColor: theme.colors.primaryLight,
@@ -77,7 +79,7 @@ const styles = StyleSheet.create({
     maxWidth: Dimensions.get('window').width - 110,
   },
   name: {
-    marginLeft: 20,
+    marginLeft: 10,
     marginBottom: 10,
     fontSize: 16,
     fontFamily: theme.fonts.medium.fontFamily,

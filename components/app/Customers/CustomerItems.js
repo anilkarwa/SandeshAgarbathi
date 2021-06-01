@@ -37,7 +37,7 @@ function CustomerItems(props) {
               {item.email}
             </Text>
             <Text numberOfLines={1} style={styles.otherDetails}>
-              {item.city}
+              {item.city === '-' ? '' : item.city}
             </Text>
           </View>
         </View>
@@ -46,7 +46,7 @@ function CustomerItems(props) {
   );
 }
 
-export default CustomerItems;
+export default React.memo(CustomerItems);
 
 const styles = StyleSheet.create({
   container: {

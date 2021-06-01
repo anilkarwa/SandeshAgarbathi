@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, {useState, useEffect} from 'react';
 import {
   FlatList,
@@ -8,69 +9,68 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
+  Text,
+  Dimensions,
 } from 'react-native';
+import debounce from 'lodash.debounce';
 import {Button, FAB} from 'react-native-paper';
 import {theme} from '../../../config/theme';
+import {useAtom} from 'jotai';
+import {invoiceCustomer} from '../../../Atoms';
+import Toast from 'react-native-toast-message';
 import CustomerItem from './CustomerItems';
 import Icons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {CustomerListLoader} from '../../../content-loaders/CustomerList';
+import {getCustomerList} from '../../../helpers/DataSync/getData';
 
-function CustomerList({navigation}) {
-  const defaultCustomers = [
-    {
-      name: 'Anil Karwa',
-      city: 'Makrana',
-      email: 'anilkarwa@gmail.com',
-      phoneNumber: '-',
-    },
-    {
-      name: 'Anil Karwa',
-      city: 'Makrana',
-      email: 'anilkarwa@gmail.com',
-      phoneNumber: '-',
-    },
-    {
-      name: 'Anil Karwa',
-      city: 'Makrana',
-      email: 'anilkarwa@gmail.com',
-      phoneNumber: '-',
-    },
-    {
-      name: 'Anil Karwa',
-      city: 'Makrana',
-      email: 'anilkarwa@gmail.com',
-      phoneNumber: '-',
-    },
-    {
-      name: 'Anil Karwa',
-      city: 'Makrana',
-      email: 'anilkarwa@gmail.com',
-      phoneNumber: '-',
-    },
-    {
-      name: 'Anil Karwa',
-      city: 'Makrana',
-      email: 'anilkarwa@gmail.com',
-      phoneNumber: '-',
-    },
-  ];
-
-  const [customers, setCustomers] = useState(defaultCustomers);
-  const [customerCount, setCustomerCount] = useState(6);
+function CustomerList({navigation, route}) {
+  const isSettings = route.params;
+  const [customers, setCustomers] = useState([]);
+  const [customerCount, setCustomerCount] = useState(0);
   const [refreshing, setRefreshing] = React.useState(false);
   const [itemLimit] = useState(25);
   const [lastVisiable, setLastVisiable] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState({});
+  const [selectedCustomer, setSelectedCustomer] = useAtom(invoiceCustomer);
+  const [isFetching, setIsFetching] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [search, setSearch] = useState('');
 
-  const loadInitialData = isSearch => {
+  useEffect(() => {
+    if (searchText === '') {
+      loadInitialData(false);
+    } else {
+      loadInitialData(true);
+    }
+  }, [searchText]);
+
+  const getCustomers = async (lVisible, searchVal = '') => {
+    let result = await getCustomerList(lVisible, itemLimit, searchVal);
+    setLoading(false);
+    setRefreshing(false);
+    setIsFetching(false);
+    if (result && result.status) {
+      let tempCustomers = lVisible === 0 ? [] : customers;
+      setCustomerCount(result?.data?.count);
+
+      setCustomers([...tempCustomers, ...result?.data?.rows]);
+    } else {
+      Toast.show({
+        text2: 'Error loading customers',
+        type: 'error',
+        position: 'bottom',
+      });
+    }
+  };
+
+  const loadInitialData = async (isSearch) => {
     if (!isSearch) {
       setCustomerCount(0);
     }
     setCustomers([]);
     setLastVisiable(0);
     setLoading(true);
+    getCustomers(0, searchText);
   };
 
   const onRefresh = React.useCallback(() => {
@@ -80,12 +80,15 @@ function CustomerList({navigation}) {
     setCustomers([]);
     setLoading(true);
     setSelectedCustomer({});
-  }, []);
+    setSearchText('');
+    setIsFetching(false);
+    getCustomers(0);
+  }, [refreshing]);
 
   const renderFooter = () => {
     try {
       // Check If Loading
-      if (customers.status === 'PENDING') {
+      if (isFetching) {
         return <ActivityIndicator color={'#2196f3'} size="large" />;
       } else {
         return <View style={{height: 40}} />;
@@ -96,25 +99,39 @@ function CustomerList({navigation}) {
   };
 
   const retrieveDataOnScroll = () => {
-    if (!loading) {
+    if (!loading && !isFetching) {
       let lastVisiableItems = lastVisiable + itemLimit;
       setLastVisiable(lastVisiableItems);
       if (lastVisiableItems < customerCount) {
-        setLoading(true);
+        setIsFetching(true);
+        getCustomers(lastVisiableItems, searchText);
       }
     }
   };
 
-  const onCustomerSelect = item => {
+  const renderEmptyComponent = () => (
+    <View style={styles.emptyList}>
+      <Text>No Customer(s) found</Text>
+    </View>
+  );
+
+  const onCustomerSelect = (item) => {
     setSelectedCustomer(item);
+  };
+
+  const debounceData = React.useMemo(() => debounce(setSearchText, 1000), []);
+
+  const setSearchData = (text) => {
+    setSearch(text);
+    debounceData(text);
   };
 
   return (
     <>
-      {customerCount === 0 ? (
+      {loading ? (
         <CustomerListLoader />
       ) : (
-        <View>
+        <View style={styles.container}>
           <View
             style={
               Platform.OS === 'android' ? styles.searchBox : styles.searchBoxIos
@@ -127,7 +144,8 @@ function CustomerList({navigation}) {
               />
               <TextInput
                 style={styles.inputText}
-                onChangeText={text => setSearchText(text)}
+                value={search}
+                onChangeText={(text) => setSearchData(text)}
                 placeholder={'search customers'}
               />
             </TouchableOpacity>
@@ -147,6 +165,7 @@ function CustomerList({navigation}) {
             onEndReachedThreshold={0.3}
             refreshing={loading}
             showsVerticalScrollIndicator={false}
+            ListEmptyComponent={renderEmptyComponent}
             renderItem={({item, index}) => (
               <>
                 <CustomerItem
@@ -162,16 +181,20 @@ function CustomerList({navigation}) {
               <Button
                 style={styles.nextBtn}
                 mode="contained"
-                onPress={() => navigation.navigate('Items')}>
+                onPress={() => {
+                  navigation.navigate('ItemSelection');
+                }}>
                 Continue
               </Button>
             </View>
           )}
-          <FAB
-            style={styles.fab}
-            icon="plus"
-            onPress={() => navigation.navigate('AddCustomer')}
-          />
+          {isSettings && (
+            <FAB
+              style={styles.fab}
+              icon="plus"
+              onPress={() => navigation.navigate('AddCustomer')}
+            />
+          )}
         </View>
       )}
     </>
@@ -179,7 +202,12 @@ function CustomerList({navigation}) {
 }
 export default CustomerList;
 
+const {width, height} = Dimensions.get('screen');
+
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   searchBox: {
     width: '100%',
     justifyContent: 'center',
@@ -223,7 +251,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     position: 'absolute',
-    bottom: -50,
+    top: height - 200,
     elevation: 4,
     backgroundColor: theme.colors.background,
     height: 80,
@@ -243,5 +271,10 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: theme.colors.primary,
+  },
+  emptyList: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 500,
   },
 });

@@ -1,5 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, {useEffect} from 'react';
+import {useAtom} from 'jotai';
+import {userAtom} from '../../Atoms';
 import {ActivityIndicator, StyleSheet, View} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -7,10 +9,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * Initial landing screen. here we check if user logged in then it go to app flow or else go to auth flow.
  */
 function AuthLoadingScreen(props) {
+  const [, setUser] = useAtom(userAtom);
   // Fetch the token from storage then navigate to our appropriate place
   async function _bootstrapAsync() {
     //USER_AUTH_TOKEN
     const user = await AsyncStorage.getItem('@USER');
+    setUser(user ? JSON.parse(user) : {});
     props.navigation.navigate(user ? 'AppStack' : 'AuthStack');
   }
 

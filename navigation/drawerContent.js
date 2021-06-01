@@ -12,7 +12,7 @@ import {DrawerContentScrollView, DrawerItem} from '@react-navigation/drawer';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useNavigation} from '@react-navigation/native';
 
-export const DrawerContent = props => {
+export const DrawerContent = (props) => {
   const {navigate} = useNavigation();
   const [user, setUser] = useState({});
   const [userProfile, SetUserProfile] = useState(
@@ -69,7 +69,9 @@ export const DrawerContent = props => {
                 )}
                 label="Customers"
                 onPress={() => {
-                  props.navigation.navigate('Customer');
+                  props.navigation.navigate('Customer', {
+                    settings: true,
+                  });
                 }}
               />
               <DrawerItem

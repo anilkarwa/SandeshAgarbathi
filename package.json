@@ -20,6 +20,8 @@
     "es6-promise": "^4.2.8",
     "formik": "^2.2.6",
     "jotai": "^0.16.3",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.1",
     "react": "16.13.1",
     "react-content-loader": "^6.0.3",
     "react-native": "0.63.0",
@@ -35,6 +37,8 @@
     "react-native-toast-message": "^1.4.9",
     "react-native-vector-icons": "^8.1.0",
     "react-navigation": "^4.4.4",
+    "react-navigation-hooks": "^1.1.0",
+    "realm": "^10.4.1",
     "yup": "^0.32.9"
   },
   "devDependencies": {

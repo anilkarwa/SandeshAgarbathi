@@ -1,11 +1,53 @@
-import React from 'react';
-import {Text, StyleSheet, View} from 'react-native';
-import {FAB} from 'react-native-paper';
+import React, {useState} from 'react';
+import {Text, StyleSheet, View, ScrollView} from 'react-native';
+import {FAB, Button, IconButton} from 'react-native-paper';
 import {theme} from '../../../config/theme';
+import {useAtom} from 'jotai';
+import {invoiceCustomer, invoiceItems} from '../../../Atoms';
+import Toast from 'react-native-toast-message';
+import SyncDataModal from '../SyncData/SyncDataModal';
+import {getCustomersCount} from '../../../helpers/DataSync/getData';
 
 export const Home = ({navigation}) => {
+  const [openSyncModal, setOpenSyncModal] = useState(false);
+  const [, setSelectedCustomer] = useAtom(invoiceCustomer);
+  const [, setSelectedItems] = useAtom(invoiceItems);
+
+  const handleInvoiceCreate = async () => {
+    const result = await getCustomersCount();
+    if (result && result.status && result.count > 0) {
+      setSelectedCustomer({});
+      setSelectedItems([]);
+      navigation.navigate('Customer');
+    } else {
+      Toast.show({
+        text2: 'Please sync data to continue!',
+        type: 'error',
+        position: 'bottom',
+      });
+    }
+  };
+
   return (
-    <View style={styles.constainer}>
+    <ScrollView
+      style={styles.constainer}
+      keyboardShouldPersistTaps={'always'}
+      keyboardDismissMode={'interactive'}>
+      <View style={styles.header}>
+        <IconButton
+          style={styles.menuBtn}
+          icon="menu"
+          size={30}
+          onPress={() => navigation.toggleDrawer()}
+        />
+        <Button
+          style={styles.synBtn}
+          icon="cloud-sync"
+          mode="contained"
+          onPress={() => setOpenSyncModal(true)}>
+          Sync Data
+        </Button>
+      </View>
       <Text style={styles.heading}>Welcome,</Text>
       <Text style={styles.name}>Anil Karwa</Text>
       <View style={styles.smallCardContainer}>
@@ -27,7 +69,7 @@ export const Home = ({navigation}) => {
         small
         icon="plus"
         label="Create Invoice"
-        onPress={() => navigation.navigate('Customer')}
+        onPress={handleInvoiceCreate}
       />
       <View style={styles.infoBox}>
         <Text style={styles.info}>
@@ -35,7 +77,11 @@ export const Home = ({navigation}) => {
           will be sent to the customer over his/her email.
         </Text>
       </View>
-    </View>
+      <SyncDataModal
+        open={openSyncModal}
+        handleClose={() => setOpenSyncModal(false)}
+      />
+    </ScrollView>
   );
 };
 
@@ -43,17 +89,17 @@ const styles = StyleSheet.create({
   constainer: {
     flex: 1,
     padding: 20,
-    paddingTop: 50,
+    paddingTop: 20,
     backgroundColor: theme.colors.background,
   },
   heading: {
-    fontFamily: theme.fonts.medium.fontFamily,
-    fontWeight: theme.fonts.medium.fontWeight,
+    fontFamily: theme.fonts.regular.fontFamily,
+    fontWeight: theme.fonts.regular.fontWeight,
     fontSize: 30,
+    color: theme.colors.placeholder,
   },
   name: {
     fontFamily: theme.fonts.regular.fontFamily,
-    marginTop: 10,
     marginLeft: 10,
     fontSize: 22,
   },
@@ -110,5 +156,19 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.regular.fontFamily,
     fontWeight: theme.fonts.regular.fontWeight,
     textAlign: 'center',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  synBtn: {
+    justifyContent: 'center',
+    alignContent: 'center',
+    height: 30,
+  },
+  menuBtn: {
+    marginLeft: -10,
   },
 });

@@ -3,14 +3,20 @@ import {Text, View, SafeAreaView, ScrollView, StyleSheet} from 'react-native';
 import {Title, TextInput, Button} from 'react-native-paper';
 import {Formik} from 'formik';
 import * as Yup from 'yup';
+import {useNavigation} from 'react-navigation-hooks';
 import Toast from 'react-native-toast-message';
 import commonStyles from '../../assets/styles/common';
 import colors from '../../config/colors';
 import {theme} from '../../config/theme';
+import {useAtom} from 'jotai';
+import {userAtom} from '../../Atoms';
 import {userLogin} from '../../services/Login';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function Login(props) {
+  const {navigate: navigationHook} = useNavigation();
+  const [, setUser] = useAtom(userAtom);
+  const passwordRef = React.useRef(null);
   const authenticateUser = async (values, setSubmitting) => {
     setSubmitting(true);
     const response = await userLogin({
@@ -18,23 +24,30 @@ function Login(props) {
       password: values.password,
     });
     setSubmitting(false);
+    let details = response.response.data;
+    let userDetails = {
+      ...details,
+      prefix: details?.code?.slice(0, 2),
+    };
+    setUser(userDetails);
+
     if (response.response_type === 'success') {
-      await AsyncStorage.setItem(
-        '@USER',
-        JSON.stringify(response.response.data),
-      );
-      props.navigate('AppStack');
+      await AsyncStorage.setItem('@USER', JSON.stringify(userDetails));
+      navigationHook('AppStack');
     } else {
       Toast.show({
         text2: 'Login failed',
         type: 'error',
+        position: 'bottom',
       });
     }
   };
 
   return (
     <SafeAreaView style={styles.screen}>
-      <ScrollView>
+      <ScrollView
+        keyboardDismissMode={'interactive'}
+        keyboardShouldPersistTaps={'always'}>
         <View style={styles.container}>
           <View>
             <Title style={styles.title}>Login</Title>
@@ -64,23 +77,32 @@ function Login(props) {
                   <TextInput
                     mode="outlined"
                     style={commonStyles.textField}
+                    error={errors.email && touched.email}
                     label="Email"
                     onChangeText={(val) => handleChange('email')(val)}
                     onBlur={handleBlur('email')}
+                    returnKeyType="next"
                     value={values.email}
+                    onSubmitEditing={() =>
+                      setTimeout(() => passwordRef.current?.focus(), 100)
+                    }
                   />
                   {errors.email && touched.email ? (
                     <Text style={commonStyles.error}>{errors.email}</Text>
                   ) : null}
 
                   <TextInput
+                    ref={passwordRef}
                     secureTextEntry
+                    error={errors.password && touched.password}
                     mode="outlined"
                     style={commonStyles.textField}
                     label="Password"
                     onChangeText={(val) => handleChange('password')(val)}
                     onBlur={handleBlur('password')}
                     value={values.password}
+                    returnKeyType="done"
+                    onSubmitEditing={handleSubmit}
                   />
                   {errors.password && touched.password ? (
                     <Text style={commonStyles.error}>{errors.password}</Text>

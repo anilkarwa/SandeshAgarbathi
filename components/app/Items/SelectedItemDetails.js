@@ -1,38 +1,35 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
-} from 'react-native';
+import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import {Avatar, IconButton} from 'react-native-paper';
 import {theme} from '../../../config/theme';
-import Icons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-function CustomerItems(props) {
+function SelectedItems(props) {
   const {item, selected} = props;
   return (
     <View style={styles.container}>
       <TouchableOpacity
-        style={[styles.details]}
+        style={styles.details}
         onPress={() => props.onItemClick(item)}>
-        <View>
-          <Avatar.Image
-            size={50}
-            source={require('../../../assets/images/user.png')}
-          />
-        </View>
         <View style={styles.infoContainer}>
-          <Text numberOfLines={1} style={styles.name}>
-            {item.name}
-          </Text>
+          <View>
+            <Text numberOfLines={1} style={[styles.name]}>
+              {item.name}
+            </Text>
+          </View>
           <View style={styles.otherDetailsFlex}>
             <Text numberOfLines={1} style={styles.otherDetails}>
-              {item.price}
+              Rate: {item.rate}
             </Text>
             <Text numberOfLines={1} style={styles.otherDetails}>
-              {item.quantity}
+              Disc: {item.discount}
+            </Text>
+          </View>
+          <View style={styles.otherDetailsFlex}>
+            <Text numberOfLines={1} style={styles.otherDetails}>
+              Qty: {item.quantity}
+            </Text>
+            <Text numberOfLines={1} style={styles.otherDetails}>
+              Total: {parseFloat(item.rate * item.quantity).toFixed(2)}
             </Text>
           </View>
         </View>
@@ -40,14 +37,14 @@ function CustomerItems(props) {
           <IconButton
             icon="circle-edit-outline"
             color={theme.colors.primary}
-            size={30}
+            size={26}
             onPress={() => props.editItem(item)}
           />
 
           <IconButton
             icon="delete-circle-outline"
             color={theme.colors.warning_red}
-            size={30}
+            size={26}
             onPress={() => props.deleteItem(item)}
           />
         </View>
@@ -56,7 +53,7 @@ function CustomerItems(props) {
   );
 }
 
-export default CustomerItems;
+export default SelectedItems;
 
 const styles = StyleSheet.create({
   container: {
@@ -77,24 +74,25 @@ const styles = StyleSheet.create({
     padding: 10,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   selected: {
     backgroundColor: theme.colors.primaryLight,
   },
   infoContainer: {
-    width: '55%',
+    width: '65%',
   },
   name: {
-    marginLeft: 20,
+    marginLeft: 10,
     marginBottom: 10,
     fontSize: 16,
     fontFamily: theme.fonts.medium.fontFamily,
     fontWeight: theme.fonts.medium.fontWeight,
   },
   otherDetailsFlex: {
-    marginLeft: 20,
+    marginLeft: 10,
+    marginTop: 8,
     fontSize: 10,
-    width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
@@ -104,6 +102,7 @@ const styles = StyleSheet.create({
     fontWeight: theme.fonts.regular.fontWeight,
   },
   actions: {
+    marginLeft: 5,
     flexDirection: 'row',
   },
 });

@@ -1,16 +1,186 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {StyleSheet, View, ScrollView} from 'react-native';
 import {Text, TextInput, Button, IconButton} from 'react-native-paper';
 import CModal from 'react-native-modal';
 import {theme} from '../../../config/theme';
+import moment from 'moment';
+import {useAtom} from 'jotai';
+import Toast from 'react-native-toast-message';
+import {invoiceCustomer, invoiceItems, userAtom} from '../../../Atoms';
+import {
+  addNewInvoice,
+  getLastInvoiceNumber,
+} from '../../../helpers/DataSync/getData';
 
 function FinalInvoice(props) {
-  const [remarks, setRemarks] = useState('');
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useAtom(invoiceCustomer);
+  const [selectedItems, setSelectedItems] = useAtom(invoiceItems);
+  const [currentUser] = useAtom(userAtom);
+  const [invoiceDetails, setInvoiceDetails] = useState({
+    id: -1,
+    invoiceNo: '',
+    invoiceDate: new Date(),
+    partyName: selectedCustomer.name,
+    addressLine1: selectedCustomer.addressLine1,
+    addressLine2: selectedCustomer.addressLine2,
+    addressLine3: selectedCustomer.addressLine3,
+    city: selectedCustomer.city,
+    state: selectedCustomer.state,
+    country: selectedCustomer.country,
+    pinCode: selectedCustomer.pindcode,
+    addedBy: currentUser.id,
+    grossAmt: 0.0,
+    cgstAmt: 0.0,
+    sgstAmt: 0.0,
+    totalAmt: 0.0,
+    grandTotolAmt: 0.0,
+    roundOff: 0.0,
+    discAmt: 0.0,
+    agent: currentUser.name,
+    remarks: '',
+    prefix: 'AN',
+    isSyned: false,
+    items: [],
+  });
 
-  const cancelInvoice = () => {};
-  const saveInvoice = () => {};
+  useEffect(() => {
+    calculateInvoiceAmount();
+  }, []);
+
+  const calculateInvoiceAmount = async () => {
+    let cgst = 0.0;
+    let sgst = 0.0;
+    let grossAmt = 0.0;
+    let totalAmt = 0.0;
+    let roundOff = 0.0;
+    let grantTotal = 0.0;
+    for (let item of selectedItems) {
+      let total = 0.0;
+      let tempCGST = 0.0;
+      let tempSGST = 0.0;
+      total = parseFloat(item.rate * item.quantity);
+      grossAmt += total;
+      tempCGST = parseFloat(total * item.cgst) / 100;
+      tempSGST = parseFloat(total * item.sgst) / 100;
+      cgst += tempCGST;
+      sgst += tempSGST;
+    }
+    totalAmt = parseFloat(parseFloat(grossAmt + cgst + sgst).toFixed(2));
+    grantTotal = Math.round(totalAmt);
+    roundOff = totalAmt - grantTotal;
+
+    let invoiceNo = await generateInvoiceNumber();
+
+    setInvoiceDetails({
+      ...invoiceDetails,
+      invoiceNo: invoiceNo,
+      grossAmt: grossAmt,
+      cgstAmt: cgst,
+      sgstAmt: sgst,
+      totalAmt: totalAmt,
+      grandTotolAmt: grantTotal,
+      roundOff: roundOff,
+      prefix: currentUser.prefix,
+    });
+  };
+
+  const cancelInvoice = () => {
+    setSelectedCustomer({});
+    setSelectedItems([]);
+    props.navigation.navigate('Home');
+  };
+
+  const saveInvoice = async () => {
+    let tempItems = [];
+    let tempInvoice = {...invoiceDetails};
+    for (let item of selectedItems) {
+      let grossAmt = parseFloat(item.rate * item.quantity);
+      let netAmt = parseFloat(item.rate * item.quantity);
+      let cgstAmt = parseFloat(netAmt * item.cgst) / 100;
+      let sgstAmt = parseFloat(netAmt * item.sgst) / 100;
+      let totalAmt = parseFloat(
+        parseFloat(netAmt + cgstAmt + sgstAmt).toFixed(2),
+      );
+
+      let obj = {
+        itemId: item.id,
+        itemName: item.code,
+        qty: parseInt(item.quantity, 10),
+        rate: item.rate,
+        grossAmt: grossAmt,
+        disPer: 0,
+        disAmt: 0.0,
+        netAmt: netAmt,
+        cgstPer: item.cgst,
+        cgstAmt: cgstAmt,
+        sgstPer: item.sgst,
+        sgstAmt: sgstAmt,
+        totalAmt: totalAmt,
+      };
+      tempItems.push(obj);
+    }
+    tempInvoice.items = tempItems;
+
+    let result = await addNewInvoice(tempInvoice);
+    if (result) {
+      setSelectedCustomer({});
+      setSelectedItems([]);
+      Toast.show({
+        text2: 'Invoice Saved',
+        type: 'success',
+        position: 'bottom',
+      });
+      setShowConfirmModal(false);
+      props.navigation.navigate('Home');
+    } else {
+      setShowConfirmModal(false);
+      Toast.show({
+        text2: 'Error Saving Invoice',
+        type: 'error',
+        position: 'bottom',
+      });
+    }
+  };
+
+  const generateInvoiceNumber = async () => {
+    try {
+      console.log('userdata==>', currentUser);
+      const result = await getLastInvoiceNumber(currentUser.prefix);
+      console.log('result==>', result);
+      const invoicePrefixConst = '00000000';
+      const invoiceNumberParts = {};
+      let finalInvoiceNumber = '';
+      const currentYear = moment(new Date()).format('YY');
+      if (result && result.state) {
+        invoiceNumberParts.year = result.data.slice(0, 2);
+        invoiceNumberParts.currentNumber = result.data.slice(
+          4,
+          result.data.length,
+        );
+      } else {
+        invoiceNumberParts.year = currentYear;
+        invoiceNumberParts.currentNumber = '00000000';
+      }
+      if (parseInt(currentYear, 10) > parseInt(invoiceNumberParts.year, 10)) {
+        invoiceNumberParts.year = currentYear;
+        invoiceNumberParts.currentNumber = '00000000';
+      }
+      const incrementedValue =
+        parseInt(invoiceNumberParts.currentNumber, 10) + 1;
+      const valueLength = incrementedValue.toString().length;
+      const paddingLength = 8 - valueLength;
+
+      finalInvoiceNumber = `${
+        invoiceNumberParts.year
+      }${'AN'}${invoicePrefixConst.slice(0, paddingLength)}${incrementedValue}`;
+      console.log('finalInvoiceNumber==>', finalInvoiceNumber);
+      return finalInvoiceNumber;
+    } catch (error) {
+      console.log('eror=>', error);
+    }
+  };
 
   return (
     <ScrollView style={styles.constainer}>
@@ -19,40 +189,68 @@ function FinalInvoice(props) {
       </View>
       <View style={styles.section}>
         <Text style={styles.space}>
-          <Text style={styles.label}>Invoice No:</Text> 223423423
+          <Text style={styles.label}>Invoice No:</Text>{' '}
+          {invoiceDetails.invoiceNo}
         </Text>
         <Text style={styles.space}>
-          <Text style={styles.label}>Date:</Text> 17/04/2021 9:00
+          <Text style={styles.label}>Date:</Text>{' '}
+          {moment(invoiceDetails.invoiceDate).format('DD/MM/YYYY hh:mm')}
         </Text>
       </View>
       <View style={styles.section}>
-        <Text style={[styles.label, styles.space]}>GMS Software Solutions</Text>
-        <Text style={styles.smallSpace}>GST: 77DSSDFS890DFD</Text>
-        <Text style={styles.smallSpace}>+91 8923423423</Text>
+        <Text style={[styles.label, styles.space]}>
+          {invoiceDetails.partyName}
+        </Text>
+        <Text style={styles.smallSpace}>GST: {selectedCustomer.gstNo}</Text>
         <Text style={styles.smallSpace}>
-          569, 20th Main Road, 2nd Floor, C R complex, Banagirnargar, BSK
+          {invoiceDetails.mobileNumber || selectedCustomer.phoneNumber}
+        </Text>
+        <Text style={styles.smallSpace}>
+          {invoiceDetails.addressLine1} {invoiceDetails.addressLine2}{' '}
+          {invoiceDetails.addressLine3} {invoiceDetails.city}{' '}
+          {invoiceDetails.state} {invoiceDetails.country}{' '}
+          {selectedCustomer.pinCode}
         </Text>
       </View>
-      <View style={[styles.section, styles.itemContainer]}>
-        <View>
-          <Text style={[styles.label, styles.space]}>1. Epson Printer</Text>
-          <Text style={styles.smallSpace}>Qty: 10</Text>
-          <Text style={styles.smallSpace}>Rate: 1000</Text>
+      {selectedItems.map((item, index) => (
+        <View style={[styles.section, styles.itemContainer]} key={item._id}>
+          <View style={styles.itemDetails}>
+            <Text numberOfLines={1} style={[styles.label, styles.space]}>
+              {index + 1}). {item.name}
+            </Text>
+            <Text style={styles.smallSpace}>Qty: {item.quantity}</Text>
+            <Text style={styles.smallSpace}>Rate: {item.rate}</Text>
+          </View>
+          <View style={styles.itemTotal}>
+            <Text>
+              Total: {parseFloat(item.rate * item.quantity).toFixed(2)}
+            </Text>
+          </View>
         </View>
-        <View style={styles.itemTotal}>
-          <Text>Total: 10,000</Text>
-        </View>
-      </View>
+      ))}
       <View style={styles.finalAmountContainer}>
-        <Text style={styles.finalAmount}>Total Amount: 10,000</Text>
+        <Text style={styles.finalAmount}>
+          Total Amount: {invoiceDetails.grossAmt}
+        </Text>
+        <Text style={styles.finalAmount}>SGST: {invoiceDetails.sgstAmt}</Text>
+        <Text style={styles.finalAmount}>CGST: {invoiceDetails.cgstAmt}</Text>
+        <Text style={styles.finalAmount}>
+          Grant Total: {invoiceDetails.grandTotolAmt}
+        </Text>
       </View>
-      <View style={{marginTop: 40}}>
+      <View style={styles.remarksContainer}>
         <TextInput
           mode="outlined"
           label="Remark"
           multiline
-          onChangeText={val => setRemarks(val)}
-          value={remarks}
+          returnKeyType="done"
+          onChangeText={(val) =>
+            setInvoiceDetails({
+              ...invoiceDetails,
+              remarks: val,
+            })
+          }
+          value={invoiceDetails.remarks}
         />
       </View>
       <View style={styles.btnContainer}>
@@ -70,7 +268,7 @@ function FinalInvoice(props) {
         </Button>
       </View>
       <CModal
-        style={{margin: 0}}
+        style={styles.modalContainer}
         hideModalContentWhileAnimating={true}
         isVisible={showCancelModal}
         animationIn="fadeInRightBig"
@@ -83,21 +281,24 @@ function FinalInvoice(props) {
         onBackdropPress={() => setShowCancelModal(false)}>
         <View style={styles.cancelContainer}>
           <IconButton
-            style={{alignSelf: 'center'}}
+            style={styles.IconBtn}
             icon="close"
             color={theme.colors.warning_red}
             size={30}
           />
           <Text>Are you sure you want to cancel ?</Text>
           <View style={styles.modalBtnContainer}>
-            <Button style={styles.deleteBtn} mode="contained">
+            <Button
+              style={styles.deleteBtn}
+              mode="contained"
+              onPress={cancelInvoice}>
               Ok
             </Button>
           </View>
         </View>
       </CModal>
       <CModal
-        style={{margin: 0}}
+        style={styles.modalContainer}
         hideModalContentWhileAnimating={true}
         animationIn="fadeInRightBig"
         animationOut="fadeOutRightBig"
@@ -110,14 +311,17 @@ function FinalInvoice(props) {
         onBackdropPress={() => setShowConfirmModal(false)}>
         <View style={styles.cancelContainer}>
           <IconButton
-            style={{alignSelf: 'center'}}
+            style={styles.IconBtn}
             icon="check-decagram"
             color={theme.colors.success}
             size={30}
           />
           <Text>Are you sure you save invoice ?</Text>
           <View style={styles.modalBtnContainer}>
-            <Button style={styles.confirmBtn} mode="contained">
+            <Button
+              style={styles.confirmBtn}
+              mode="contained"
+              onPress={saveInvoice}>
               Yes
             </Button>
           </View>
@@ -169,10 +373,12 @@ const styles = StyleSheet.create({
   },
   finalAmountContainer: {
     justifyContent: 'flex-end',
-    flexDirection: 'row',
+    flexDirection: 'column',
     paddingTop: 20,
     borderTopWidth: 2,
     borderTopColor: theme.colors.divider,
+    alignItems: 'flex-end',
+    marginRight: 10,
   },
   finalAmount: {
     fontFamily: theme.fonts.medium.fontFamily,
@@ -201,8 +407,20 @@ const styles = StyleSheet.create({
     margin: 5,
     alignItems: 'center',
   },
+  modalContainer: {
+    margin: 0,
+  },
+  IconBtn: {
+    alignSelf: 'center',
+  },
+  itemDetails: {
+    width: '65%',
+  },
   modalBtnContainer: {
     marginTop: 30,
+  },
+  remarksContainer: {
+    marginTop: 40,
   },
   deleteBtn: {
     marginTop: 30,
