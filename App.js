@@ -21,11 +21,9 @@ const App = () => {
 
   return (
     <>
-      <JotaiProvider>
-        <PaperProvider theme={theme}>
-          <ErrorBoundary
-            onError={errorHandler}
-            FallbackComponent={ErrorFallback}>
+      <PaperProvider theme={theme}>
+        <ErrorBoundary onError={errorHandler} FallbackComponent={ErrorFallback}>
+          <JotaiProvider>
             <NavigatorContainer
               TopLevelNavigator
               ref={(navigatorRef) => {
@@ -33,10 +31,10 @@ const App = () => {
               }}
             />
             <AppLoader />
-            <Toast ref={(ref) => Toast.setRef(ref)} />
-          </ErrorBoundary>
-        </PaperProvider>
-      </JotaiProvider>
+          </JotaiProvider>
+          <Toast ref={(ref) => Toast.setRef(ref)} />
+        </ErrorBoundary>
+      </PaperProvider>
     </>
   );
 };

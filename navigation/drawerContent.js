@@ -1,5 +1,6 @@
+/* eslint-disable react-native/no-inline-styles */
 import React, {useState} from 'react';
-import {View, StyleSheet, TouchableOpacity} from 'react-native';
+import {View, StyleSheet, TouchableOpacity, Text} from 'react-native';
 import {
   Avatar,
   Title,
@@ -8,16 +9,27 @@ import {
   Drawer,
   Divider,
 } from 'react-native-paper';
+import moment from 'moment';
+import {theme} from '../config/theme';
+import {useAtom} from 'jotai';
+import {userAtom} from '../Atoms';
 import {DrawerContentScrollView, DrawerItem} from '@react-navigation/drawer';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation} from 'react-navigation-hooks';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const DrawerContent = (props) => {
   const {navigate} = useNavigation();
-  const [user, setUser] = useState({});
-  const [userProfile, SetUserProfile] = useState(
-    require('../assets/images/user.png'),
-  );
+  const [user] = useAtom(userAtom);
+  const [userProfile] = useState(require('../assets/images/user.png'));
+
+  const logoutUser = async () => {
+    let keys = ['@USER_AUTH_TOKEN', '@USER'];
+    await AsyncStorage.multiRemove(keys, (err) => {
+      console.log('errr', err);
+    });
+    navigate('AuthStack');
+  };
 
   return (
     <>
@@ -48,6 +60,9 @@ export const DrawerContent = (props) => {
                     </Title>
                     <Caption numberOfLines={1} style={styles.caption}>
                       {user.email}
+                    </Caption>
+                    <Caption numberOfLines={1} style={styles.caption}>
+                      Prefix: {user.prefix}
                     </Caption>
                   </View>
                 </View>
@@ -83,9 +98,70 @@ export const DrawerContent = (props) => {
                   props.navigation.navigate('Invoices');
                 }}
               />
+              <DrawerItem
+                icon={({color, size}) => (
+                  <Icon name="power" color={color} size={size} />
+                )}
+                label="Logout"
+                onPress={logoutUser}
+              />
             </Drawer.Section>
           </View>
         </DrawerContentScrollView>
+        <Drawer.Section style={styles.bottomDrawerSection}>
+          <View>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 10,
+                marginLeft: -5,
+              }}>
+              <Text
+                style={{
+                  fontFamily: 'Spartan-Bold',
+                  fontSize: 16,
+                  marginTop: -5,
+                }}>
+                Sandesh Agarbathi Co.
+              </Text>
+            </View>
+
+            <View
+              style={{
+                justifyContent: 'center',
+                alignItems: 'center',
+                flexDirection: 'row',
+              }}>
+              <Icon name="copyright" color={'#B2BABB'} size={14} />
+              <Text
+                style={{
+                  fontFamily: 'Roboto-Light',
+                  fontSize: 12,
+                  color: '#B2BABB',
+                }}>
+                {moment(new Date()).format('YYYY')}, All rights reserved
+              </Text>
+            </View>
+            <View
+              style={{
+                justifyContent: 'center',
+                alignItems: 'center',
+                flexDirection: 'row',
+                marginTop: 5,
+              }}>
+              <Text
+                style={{
+                  fontFamily: 'Roboto-Light',
+                  fontSize: 12,
+                  color: '#B2BABB',
+                }}>
+                Designed & Developed By: Softvent
+              </Text>
+            </View>
+          </View>
+        </Drawer.Section>
       </View>
     </>
   );
@@ -97,19 +173,20 @@ const styles = StyleSheet.create({
   },
   userInfoSection: {
     marginTop: -5,
-    height: 150,
+    height: 130,
+    borderColor: '#D5DBDB',
+    borderBottomWidth: 0.5,
   },
   title: {
     fontSize: 18,
     marginTop: 3,
-    fontFamily: 'Khula-Bold',
-    color: '#fff',
+    color: theme.colors.text,
   },
   caption: {
     fontSize: 14,
     lineHeight: 14,
-    color: '#D7DBDD',
-    fontFamily: 'Roboto-Light',
+    color: theme.colors.text,
+    marginBottom: 10,
   },
   row: {
     marginTop: 30,

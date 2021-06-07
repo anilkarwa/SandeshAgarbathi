@@ -6,19 +6,31 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
+import moment from 'moment';
+import {useNavigation} from '@react-navigation/native';
 import {theme} from '../../../config/theme';
 import Icons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 function InvoiceItem(props) {
+  const navigation = useNavigation();
   const {item} = props;
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={[styles.details]}>
+      <TouchableOpacity
+        style={[styles.details]}
+        onPress={() =>
+          navigation.navigate('InvoiceDetails', {
+            invoice: item,
+          })
+        }>
         <View style={styles.firstRow}>
           <View style={styles.invoiceContainer}>
-            <Text style={styles.invoiceNum}>#3423432</Text>
+            <Text style={styles.invoiceNum}>{item.invoiceNo}</Text>
           </View>
-          <Text style={styles.otherText}>14/04/2021</Text>
+          <Text style={styles.otherText}>
+            {moment(new Date(item.invoiceDate)).format('DD/MM/YYYY')}{' '}
+            {item.time}
+          </Text>
         </View>
         <View style={styles.secondRow}>
           <View style={styles.customerDetail}>
@@ -27,17 +39,21 @@ function InvoiceItem(props) {
               size={20}
               color={theme.colors.placeholder}
             />
-            <Text style={styles.customerName}>Anil Karwa</Text>
+            <Text style={styles.customerName}>{item.partyName}</Text>
           </View>
         </View>
         <View style={styles.thirdRow}>
           <View>
             <Text style={styles.otherText}>Tax</Text>
-            <Text style={styles.otherBoldText}>100</Text>
+            <Text style={styles.otherBoldText}>
+              {parseFloat(item.cgstAmt + item.sgstAmt).toFixed(2)}
+            </Text>
           </View>
           <View>
             <Text style={styles.otherText}>Invoice Value</Text>
-            <Text style={styles.otherBoldText}>1000</Text>
+            <Text style={styles.otherBoldText}>
+              {parseFloat(item.totalAmt).toFixed(2)}
+            </Text>
           </View>
         </View>
       </TouchableOpacity>

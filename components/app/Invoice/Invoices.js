@@ -8,48 +8,63 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
+  Text,
 } from 'react-native';
+import debounce from 'lodash.debounce';
+import Toast from 'react-native-toast-message';
 import Icons from 'react-native-vector-icons/MaterialCommunityIcons';
 import InvoiceItem from './InvoiceItem';
 import {CustomerListLoader} from '../../../content-loaders/CustomerList';
-
+import {getinvoiceList} from '../../../helpers/DataSync/getData';
 import {theme} from '../../../config/theme';
 
 function Invoices(props) {
-  const defaultInvoice = [
-    {
-      id: 1,
-    },
-    {
-      id: 1,
-    },
-    {
-      id: 1,
-    },
-    {
-      id: 1,
-    },
-    {
-      id: 1,
-    },
-  ];
   const {navigation} = props;
-  const [invoiceList, setInvoiceList] = useState(defaultInvoice);
+  const [invoiceList, setInvoiceList] = useState([]);
   const [invoiceCount, setInvoiceCount] = useState(0);
   const [refreshing, setRefreshing] = React.useState(false);
   const [itemLimit] = useState(25);
   const [lastVisiable, setLastVisiable] = useState(0);
   const [searchText, setSearchText] = useState('');
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
 
-  const loadInitialData = isSearch => {
+  useEffect(() => {
+    if (searchText === '') {
+      loadInitialData(false);
+    } else {
+      loadInitialData(true);
+    }
+  }, [searchText]);
+
+  const getInvoices = async (lVisible, searchVal = '') => {
+    let result = await getinvoiceList(lVisible, itemLimit, searchVal);
+    setLoading(false);
+    setRefreshing(false);
+    setIsFetching(false);
+    if (result && result.status) {
+      let tempInvoices = lVisible === 0 ? [] : invoiceList;
+      setInvoiceCount(result?.data?.count);
+
+      setInvoiceList([...tempInvoices, ...result?.data?.rows]);
+    } else {
+      Toast.show({
+        text2: 'Error loading invoices',
+        type: 'error',
+        position: 'bottom',
+      });
+    }
+  };
+
+  const loadInitialData = async (isSearch) => {
     if (!isSearch) {
       setInvoiceCount(0);
     }
     setInvoiceList([]);
     setLastVisiable(0);
     setLoading(true);
+    getInvoices(0, searchText);
   };
 
   const onRefresh = React.useCallback(() => {
@@ -58,7 +73,10 @@ function Invoices(props) {
     setInvoiceCount(0);
     setInvoiceList([]);
     setLoading(true);
-  }, []);
+    setSearchText('');
+    setIsFetching(false);
+    getInvoices(0);
+  }, [refreshing]);
 
   const renderFooter = () => {
     try {
@@ -66,7 +84,7 @@ function Invoices(props) {
       if (isFetching) {
         return <ActivityIndicator color={'#2196f3'} size="large" />;
       } else {
-        return <View style={{height: 40}} />;
+        return <View style={styles.emptyFooter} />;
       }
     } catch (error) {
       console.log(error);
@@ -74,18 +92,32 @@ function Invoices(props) {
   };
 
   const retrieveDataOnScroll = () => {
-    if (!loading) {
+    if (!loading && !isFetching) {
       let lastVisiableItems = lastVisiable + itemLimit;
       setLastVisiable(lastVisiableItems);
       if (lastVisiableItems < invoiceCount) {
-        setLoading(true);
+        setIsFetching(true);
+        getInvoices(lastVisiableItems, searchText);
       }
     }
   };
 
+  const renderEmptyComponent = () => (
+    <View style={styles.emptyList}>
+      <Text>No Customer(s) found</Text>
+    </View>
+  );
+
+  const debounceData = React.useMemo(() => debounce(setSearchText, 1000), []);
+
+  const setSearchData = (text) => {
+    setSearch(text);
+    debounceData(text);
+  };
+
   return (
     <>
-      {loading === 0 ? (
+      {loading && invoiceCount === 0 ? (
         <CustomerListLoader />
       ) : (
         <View>
@@ -101,7 +133,8 @@ function Invoices(props) {
               />
               <TextInput
                 style={styles.inputText}
-                onChangeText={text => setSearchText(text)}
+                value={search}
+                onChangeText={(text) => setSearchData(text)}
                 placeholder={'search invoice'}
               />
             </TouchableOpacity>
@@ -119,6 +152,7 @@ function Invoices(props) {
             ListFooterComponent={renderFooter}
             onEndReached={retrieveDataOnScroll}
             onEndReachedThreshold={0.3}
+            ListEmptyComponent={renderEmptyComponent}
             refreshing={loading}
             showsVerticalScrollIndicator={false}
             renderItem={({item, index}) => (

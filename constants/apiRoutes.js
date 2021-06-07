@@ -1,4 +1,4 @@
-export const baseUrl = 'https://fd0fdcbb91d5.ngrok.io';
+export const baseUrl = 'https://1d14021eea61.ngrok.io';
 
 export const apiURL = {
   LOGIN: '/login',
@@ -7,4 +7,6 @@ export const apiURL = {
   UPDATECUSTOMER: '/updateCustomer',
   ITEM: '/item',
   CUSTOMERGROUPS: '/customer-groups',
+  INVOICELIST: '/getAllInvoice',
+  SAVEINVOICE: '/saveInvoice',
 };

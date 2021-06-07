@@ -13,7 +13,8 @@ import {
   Dimensions,
 } from 'react-native';
 import debounce from 'lodash.debounce';
-import {Button, FAB} from 'react-native-paper';
+import CModal from 'react-native-modal';
+import {Button, FAB, IconButton} from 'react-native-paper';
 import {theme} from '../../../config/theme';
 import {useAtom} from 'jotai';
 import {invoiceCustomer} from '../../../Atoms';
@@ -21,7 +22,10 @@ import Toast from 'react-native-toast-message';
 import CustomerItem from './CustomerItems';
 import Icons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {CustomerListLoader} from '../../../content-loaders/CustomerList';
-import {getCustomerList} from '../../../helpers/DataSync/getData';
+import {
+  getCustomerList,
+  updateCustomer,
+} from '../../../helpers/DataSync/getData';
 
 function CustomerList({navigation, route}) {
   const isSettings = route.params;
@@ -35,6 +39,7 @@ function CustomerList({navigation, route}) {
   const [isFetching, setIsFetching] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [search, setSearch] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     if (searchText === '') {
@@ -91,7 +96,7 @@ function CustomerList({navigation, route}) {
       if (isFetching) {
         return <ActivityIndicator color={'#2196f3'} size="large" />;
       } else {
-        return <View style={{height: 40}} />;
+        return <View style={styles.emptyFooter} />;
       }
     } catch (error) {
       console.log(error);
@@ -126,9 +131,50 @@ function CustomerList({navigation, route}) {
     debounceData(text);
   };
 
+  const updateSelectedCustomer = async (customer) => {
+    let result = await updateCustomer({...customer, isUpdated: true});
+    if (result) {
+      Toast.show({
+        text2: 'Updated customer successfully',
+        type: 'success',
+        position: 'bottom',
+      });
+    } else {
+      Toast.show({
+        text2: 'Error updating customers',
+        type: 'error',
+        position: 'bottom',
+      });
+    }
+  };
+
+  const openDeleteConfirmation = (customer) => {
+    setSelectedCustomer(customer);
+    setShowDeleteModal(true);
+  };
+
+  const deleteSelectedCutomer = async () => {
+    setCustomers(customers.filter((e) => e._id !== selectedCustomer._id));
+    let result = await updateCustomer({...selectedCustomer, isDeleted: true});
+    if (result) {
+      setShowDeleteModal(false);
+      Toast.show({
+        text2: 'Deleted customer successfully',
+        type: 'success',
+        position: 'bottom',
+      });
+    } else {
+      Toast.show({
+        text2: 'Error deleting customers',
+        type: 'error',
+        position: 'bottom',
+      });
+    }
+  };
+
   return (
     <>
-      {loading ? (
+      {loading && customerCount === 0 ? (
         <CustomerListLoader />
       ) : (
         <View style={styles.container}>
@@ -162,21 +208,24 @@ function CustomerList({navigation, route}) {
             keyExtractor={(item, index) => index.toString()}
             ListFooterComponent={renderFooter}
             onEndReached={retrieveDataOnScroll}
-            onEndReachedThreshold={0.3}
+            onEndReachedThreshold={0.1}
             refreshing={loading}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={renderEmptyComponent}
             renderItem={({item, index}) => (
-              <>
-                <CustomerItem
-                  item={item}
-                  onCustomerSelect={onCustomerSelect}
-                  selectedCustomer={selectedCustomer}
-                />
-              </>
+              <CustomerItem
+                parentNavigation={navigation}
+                item={item}
+                isSettings={isSettings}
+                onCustomerSelect={onCustomerSelect}
+                selectedCustomer={selectedCustomer}
+                updateCustomer={updateSelectedCustomer}
+                deleteCustomer={openDeleteConfirmation}
+                refreshList={() => onRefresh()}
+              />
             )}
           />
-          {Object.keys(selectedCustomer).length === 0 ? null : (
+          {isSettings || Object.keys(selectedCustomer).length === 0 ? null : (
             <View style={styles.footer}>
               <Button
                 style={styles.nextBtn}
@@ -192,9 +241,39 @@ function CustomerList({navigation, route}) {
             <FAB
               style={styles.fab}
               icon="plus"
-              onPress={() => navigation.navigate('AddCustomer')}
+              onPress={() =>
+                navigation.navigate('AddCustomer', {
+                  refreshList: () => onRefresh(),
+                })
+              }
             />
           )}
+          <CModal
+            style={styles.modalContainer}
+            isVisible={showDeleteModal}
+            useNativeDriver={true}
+            onBackdropPress={() => setShowDeleteModal(false)}
+            hasBackdrop>
+            <View style={styles.quantityContainer}>
+              <IconButton
+                style={styles.centerItems}
+                icon="delete-circle-outline"
+                color={theme.colors.warning_red}
+                size={30}
+              />
+              <Text style={styles.centerItems}>
+                Are you sure you want to delete this item?
+              </Text>
+              <View style={styles.btnContainer}>
+                <Button
+                  style={styles.deleteBtn}
+                  mode="contained"
+                  onPress={deleteSelectedCutomer}>
+                  Delete
+                </Button>
+              </View>
+            </View>
+          </CModal>
         </View>
       )}
     </>
@@ -272,9 +351,33 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: theme.colors.primary,
   },
+  modalContainer: {
+    margin: 0,
+  },
+  centerItems: {
+    alignSelf: 'center',
+  },
   emptyList: {
     justifyContent: 'center',
     alignItems: 'center',
     height: 500,
+  },
+  emptyFooter: {
+    height: 40,
+  },
+  quantityContainer: {
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.roundness,
+    padding: 10,
+    paddingBottom: 40,
+    paddingTop: 20,
+    margin: 5,
+  },
+  deleteBtn: {
+    marginTop: 30,
+    justifyContent: 'center',
+    alignSelf: 'center',
+    width: 200,
+    backgroundColor: theme.colors.warning_red,
   },
 });

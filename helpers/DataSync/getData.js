@@ -2,6 +2,11 @@ import {
   getCustomers,
   getItems,
   getCustomerGroups,
+  updateCustomer as updateExitingCustomers,
+  createCustomer,
+  deleteCustomer,
+  invoiceList,
+  saveInvoices,
 } from '../../services/TableData';
 import CustomerSchema from '../../Realm/CustomerSchema';
 import ItemSchema from '../../Realm/ItemSchema';
@@ -60,7 +65,9 @@ export const getAllCustomers = () => {
                 contactPerson: cust.contactPerson,
                 gstNo: cust.gstNo,
                 addedBy: cust.addedBy,
+                addedOn: cust.addedOn ? new Date(cust.addedOn) : null,
                 changedBy: cust.changedBy,
+                changedOn: cust.changedOn ? new Date(cust.changedOn) : null,
                 remarks: cust.remarks,
                 isSynced: true,
               };
@@ -69,14 +76,20 @@ export const getAllCustomers = () => {
           });
         }
         realm.close();
-        resolve(true);
+        resolve({
+          status: true,
+        });
       } else {
-        resolve(false);
+        resolve({
+          status: false,
+        });
       }
     } catch (error) {
       console.log('errorrr line 61=>', error);
       realm.close();
-      return resolve(false);
+      return resolve({
+        status: false,
+      });
     }
   });
 };
@@ -86,16 +99,47 @@ export const getUnSyncedCustomers = () => {
     let realm = new Realm(customerOptions);
     try {
       const customers = realm.objects('Customer');
-      const unSynced = customers.filtered('isSynced == false');
+      const unSynced = customers.filtered(
+        'isSynced == false && isDeleted == false',
+      );
       if (unSynced && unSynced.length) {
-        resolve({
-          status: true,
-          data: JSON.parse(JSON.stringify(unSynced)),
-        });
+        let newCustomerList = [];
+        for (let cust of unSynced) {
+          let newCust = {
+            name: cust.name,
+            code: cust.code,
+            email: cust.email,
+            addressLine1: cust.addressLine1,
+            addressLine2: cust.addressLine2,
+            addressLine3: cust.addressLine3,
+            city: cust.city,
+            state: cust.state,
+            country: cust.country,
+            pincode: cust.pincode,
+            groupId: cust.groupId,
+            phoneNumber: cust.phoneNumber,
+            mobileNumber: cust.mobileNumber,
+            contactPerson: cust.contactPerson,
+            gstNo: cust.gstNo,
+            addedBy: cust.addedBy,
+            remarks: cust.remarks,
+          };
+          newCustomerList.push(newCust);
+        }
+
+        let result = await createCustomer(newCustomerList);
+        if (result.response_type === 'success') {
+          resolve({
+            status: true,
+          });
+        } else {
+          resolve({
+            status: false,
+          });
+        }
       } else {
         resolve({
           status: true,
-          data: [],
         });
       }
       realm.close();
@@ -104,7 +148,6 @@ export const getUnSyncedCustomers = () => {
       realm.close();
       return resolve({
         status: false,
-        data: [],
       });
     }
   });
@@ -115,16 +158,48 @@ export const getUpdatedCustomers = () => {
     let realm = new Realm(customerOptions);
     try {
       const customers = realm.objects('Customer');
-      const updated = customers.filtered('isUpdated == true');
+      const updated = customers.filtered(
+        'isUpdated == true && isDeleted == false && isSynced == true',
+      );
       if (updated && updated.length) {
-        resolve({
-          status: true,
-          data: JSON.parse(JSON.stringify(updated)),
-        });
+        let updatedCustomerList = [];
+        for (let cust of updated) {
+          let updatedCust = {
+            id: cust.id,
+            name: cust.name,
+            code: cust.code,
+            email: cust.email,
+            addressLine1: cust.addressLine1,
+            addressLine2: cust.addressLine2,
+            addressLine3: cust.addressLine3,
+            city: cust.city,
+            state: cust.state,
+            country: cust.country,
+            pincode: cust.pincode,
+            groupId: cust.groupId,
+            phoneNumber: cust.phoneNumber,
+            mobileNumber: cust.mobileNumber,
+            contactPerson: cust.contactPerson,
+            gstNo: cust.gstNo,
+            changedBy: cust.changedBy,
+            remarks: cust.remarks,
+          };
+          updatedCustomerList.push(updatedCust);
+        }
+
+        let result = await updateExitingCustomers(updatedCustomerList);
+        if (result.response_type === 'success') {
+          resolve({
+            status: true,
+          });
+        } else {
+          resolve({
+            status: false,
+          });
+        }
       } else {
         resolve({
           status: true,
-          data: [],
         });
       }
       realm.close();
@@ -133,7 +208,49 @@ export const getUpdatedCustomers = () => {
       realm.close();
       return resolve({
         status: false,
-        data: [],
+      });
+    }
+  });
+};
+
+export const getDeletedCustomers = () => {
+  return new Promise(async (resolve, reject) => {
+    let realm = new Realm(customerOptions);
+    try {
+      const customers = realm.objects('Customer');
+      const deleted = customers.filtered(
+        'isDeleted == true && isSynced == true',
+      );
+      if (deleted && deleted.length) {
+        let deletedCustomerList = [];
+        for (let cust of deleted) {
+          let deletedCust = {
+            id: cust.id,
+          };
+          deletedCustomerList.push(deletedCust);
+        }
+
+        let result = await deleteCustomer(deletedCustomerList);
+        if (result.response_type === 'success') {
+          resolve({
+            status: true,
+          });
+        } else {
+          resolve({
+            status: false,
+          });
+        }
+      } else {
+        resolve({
+          status: true,
+        });
+      }
+      realm.close();
+    } catch (error) {
+      console.log('errorrr line 110=>', error);
+      realm.close();
+      return resolve({
+        status: false,
       });
     }
   });
@@ -193,7 +310,6 @@ export const getCustomersCount = () => {
     let realm = new Realm(customerOptions);
     try {
       const customers = realm.objects('Customer');
-      console.log('itemss=>', customers.length);
       if (customers && customers.length) {
         resolve({
           status: true,
@@ -208,11 +324,29 @@ export const getCustomersCount = () => {
       realm.close();
     } catch (error) {
       console.log('errorrr line 181=>', error);
-      realm.close();
+      //realm.close();
       return resolve({
         status: false,
         count: 0,
       });
+    }
+  });
+};
+
+export const updateCustomer = (customer) => {
+  return new Promise(async (resolve, reject) => {
+    let realm = new Realm(customerOptions);
+    try {
+      // create realm object
+      realm.write(() => {
+        realm.create('Customer', customer, 'modified');
+      });
+      realm.close();
+      resolve(true);
+    } catch (error) {
+      console.log('errorrr line 295=>', error);
+      realm.close();
+      return resolve(false);
     }
   });
 };
@@ -305,8 +439,9 @@ export const getItemList = (skip, size, search) => {
 
 export const getAllCustomerGroups = () => {
   return new Promise(async (resolve, reject) => {
-    let realm = new Realm(customerGroupOptions);
+    let realm = null;
     try {
+      realm = new Realm(customerGroupOptions);
       let result = await getCustomerGroups();
       if (result.response_type === 'success') {
         const {data} = result.response;
@@ -331,7 +466,7 @@ export const getAllCustomerGroups = () => {
       }
     } catch (error) {
       console.log('errorrr line 295=>', error);
-      realm.close();
+      realm?.close();
       return resolve(false);
     }
   });
@@ -346,9 +481,127 @@ export const getCustomerGroupList = () => {
       if (sorted && sorted.length) {
         resolve({
           status: true,
+          data: JSON.parse(JSON.stringify(sorted)),
+        });
+      } else {
+        resolve({
+          status: true,
+          data: [],
+        });
+      }
+      realm.close();
+    } catch (error) {
+      console.log('errorrr line 324=>', error);
+      realm.close();
+      return resolve({
+        status: false,
+        data: [],
+      });
+    }
+  });
+};
+
+export const getAllInvoice = (payload) => {
+  return new Promise(async (resolve, reject) => {
+    let realm = null;
+    try {
+      realm = new Realm(invoiceOptions);
+      let result = await invoiceList(payload);
+      if (result.response_type === 'success') {
+        const {data} = result.response;
+        if (data && data.length) {
+          // create realm object
+          realm.write(() => {
+            realm.deleteAll();
+            for (let item of data) {
+              let invoiceItems = [];
+              for (let iv of item.items) {
+                let obj = {
+                  itemId: iv.invoiceItemId,
+                  itemName: iv.itemName,
+                  qty: iv.quantity,
+                  rate: iv.rate,
+                  grossAmt: iv.grossAmt,
+                  disPer: iv.discPer,
+                  disAmt: iv.discAmt,
+                  netAmt: iv.netAmt,
+                  cgstPer: iv.cgstPer,
+                  cgstAmt: iv.cgstAmt,
+                  sgstPer: iv.sgstPer,
+                  sgstAmt: iv.sgstAmt,
+                  totalAmt: iv.totalAmt,
+                };
+                invoiceItems.push(obj);
+              }
+
+              let finalObj = {
+                _id: Realm.BSON.ObjectId().toHexString(),
+                id: item.id,
+                invoiceNo: item.invoiceNo,
+                invoiceDate: new Date(item.invoiceDate),
+                time: item.time,
+                custId: item.custId,
+                partyName: item.partyName,
+                addressLine1: item.addressLine1,
+                addressLine2: item.addressLine2,
+                addressLine3: item.addressLine3,
+                city: item.city,
+                state: item.state,
+                country: item.country,
+                pinCode: item.pincode,
+                grossAmt: item.grossAmt,
+                cgstAmt: item.totalCGSTAmt,
+                sgstAmt: item.totalSGSTAmt,
+                totalAmt: item.totalAmt,
+                grandTotolAmt: item.grandTotalAmt,
+                roundOff: item.roundOffAmt,
+                discAmt: item.discAmt,
+                agent: item.agent,
+                remarks: item.remarks,
+                prefix: item.prefix,
+                isSyned: true,
+                items: invoiceItems,
+              };
+              realm.create('Invoice', finalObj);
+            }
+          });
+        }
+        realm.close();
+        resolve(true);
+      } else {
+        resolve(false);
+      }
+    } catch (error) {
+      console.log('errorrr line 572=>', error);
+      realm.close();
+      return resolve(false);
+    }
+  });
+};
+
+export const getinvoiceList = (skip, size, search) => {
+  return new Promise(async (resolve, reject) => {
+    let realm = new Realm(invoiceOptions);
+    try {
+      const start = skip;
+      const end = size + skip;
+      const invoices = realm.objects('Invoice');
+      let selectedInvoices = invoices;
+      if (search && search !== '') {
+        selectedInvoices = invoices.filtered(
+          'invoiceNo CONTAINS[c] $0 OR partyName CONTAINS[c] $0',
+          search,
+        );
+      }
+
+      const sorted = selectedInvoices.sorted('invoiceDate', true);
+      if (sorted && sorted.length) {
+        let final = sorted.slice(start, end);
+        resolve({
+          status: true,
           data: {
             count: sorted.length,
-            rows: JSON.parse(JSON.stringify(sorted)),
+            rows: JSON.parse(JSON.stringify(final)),
           },
         });
       } else {
@@ -362,7 +615,7 @@ export const getCustomerGroupList = () => {
       }
       realm.close();
     } catch (error) {
-      console.log('errorrr line 324=>', error);
+      console.log('errorrr line 613=>', error);
       realm.close();
       return resolve({
         status: false,
@@ -394,9 +647,180 @@ export const addNewInvoice = (newInvoice) => {
   });
 };
 
-export const getLastInvoiceNumber = (userPrefix = 'AN') => {
+export const getUnSyncedInvoice = () => {
   return new Promise(async (resolve, reject) => {
-    console.log('preeff=>', userPrefix);
+    let realm = null;
+    try {
+      realm = new Realm(invoiceOptions);
+      const invoices = realm.objects('Invoice');
+      const unSynced = invoices.filtered('isSyned == false');
+      if (unSynced && unSynced.length) {
+        let newInvoice = [];
+        for (let inv of unSynced) {
+          let itemObj = [];
+          for (let item of inv.items) {
+            itemObj.push({
+              itemId: item.itemId,
+              itemName: item.itemName,
+              quantity: item.qty,
+              rate: parseFloat(parseFloat(item.rate).toFixed(2)),
+              grossAmt: parseFloat(parseFloat(item.grossAmt).toFixed(2)),
+              disPer: item.disPer,
+              disAmt: item.discAmt
+                ? parseFloat(parseFloat(item.discAmt).toFixed(2))
+                : 0,
+              netAmt: parseFloat(parseFloat(item.netAmt).toFixed(2)),
+              cgstPer: item.cgstPer,
+              cgstAmt: parseFloat(parseFloat(item.cgstAmt).toFixed(2)),
+              sgstPer: item.sgstPer,
+              sgstAmt: parseFloat(parseFloat(item.sgstAmt).toFixed(2)),
+              totalAmt: parseFloat(parseFloat(item.totalAmt).toFixed(2)),
+            });
+          }
+          let newCust = {
+            invoiceNo: inv.invoiceNo,
+            invoiceDate: new Date(inv.invoiceDate),
+            time: inv.time,
+            custId: inv.custId,
+            custCode: inv.custCode,
+            partyName: inv.partyName,
+            addressLine1: inv.addressLine1,
+            addressLine2: inv.addressLine2,
+            addressLine3: inv.addressLine3,
+            city: inv.city,
+            state: inv.state,
+            country: inv.country,
+            pincode: inv.pinCode ? inv.pinCode : '',
+            grossAmt: parseFloat(parseFloat(inv.grossAmt).toFixed(2)),
+            totalCGSTAmt: parseFloat(parseFloat(inv.cgstAmt).toFixed(2)),
+            totalSGSTAmt: parseFloat(parseFloat(inv.sgstAmt).toFixed(2)),
+            totalAmt: parseFloat(parseFloat(inv.totalAmt).toFixed(2)),
+            grandTotalAmt: parseFloat(parseFloat(inv.grandTotolAmt).toFixed(2)),
+            roundOffAmt: parseFloat(parseFloat(inv.roundOff).toFixed(2)),
+            discAmt: inv.disAmt ? inv.discAmt : 0,
+            agent: inv.agent,
+            remarks: inv.remarks,
+            prefix: inv.prefix,
+            items: itemObj,
+            addedBy: inv.addedBy,
+            addedOn: new Date(inv.addedOn),
+          };
+          newInvoice.push(newCust);
+        }
+        let result = await saveInvoices(newInvoice);
+        if (result.response_type === 'success') {
+          resolve({
+            status: true,
+          });
+        } else {
+          resolve({
+            status: false,
+          });
+        }
+      } else {
+        resolve({
+          status: true,
+        });
+      }
+      realm.close();
+    } catch (error) {
+      console.log('errorrr line 724=>', error);
+      realm.close();
+      return resolve({
+        status: false,
+      });
+    }
+  });
+};
+
+export const updateInvoiceCustomerData = () => {
+  return new Promise(async (resolve, reject) => {
+    let realm = null;
+    let unSyned = [];
+    let custCodes = [];
+    let custIds = [];
+    try {
+      realm = new Realm(invoiceOptions);
+      const unSyncedInvoiceList = realm
+        .objects('Invoice')
+        .filtered('isSyned == false');
+      if (unSyncedInvoiceList && unSyncedInvoiceList.length) {
+        unSyned = JSON.parse(JSON.stringify(unSyncedInvoiceList));
+        custCodes = unSyned.map((inv) => {
+          return inv.custCode;
+        });
+      } else {
+        return resolve({
+          status: true,
+        });
+      }
+      realm.close();
+    } catch (error) {
+      console.log('error line 543=>', error);
+      realm.close();
+      return resolve({
+        status: false,
+      });
+    }
+
+    let realm2 = new Realm(customerOptions);
+    try {
+      const cust = realm2
+        .objects('Customer')
+        .filtered(
+          custCodes.map((_id, index) => `code = $${index}`).join(' OR '),
+          ...custCodes,
+        );
+      if (cust && cust.length) {
+        custIds = cust.map((e) => {
+          return {code: e.code, id: e.id};
+        });
+      } else {
+        return resolve({
+          status: true,
+        });
+      }
+      realm2.close();
+    } catch (error) {
+      console.log('error line 568=>', error);
+      realm2.close();
+      return resolve({
+        status: false,
+      });
+    }
+
+    let realm3 = new Realm(invoiceOptions);
+    try {
+      for (let cust of custIds) {
+        unSyned = unSyned.map((e) => {
+          if (e.custCode === cust.code) {
+            return {...e, custId: cust.id};
+          } else {
+            return e;
+          }
+        });
+      }
+      realm3.write(() => {
+        for (let inv of unSyned) {
+          realm3.create('Invoice', inv, 'modified');
+        }
+      });
+      realm3.close();
+      return resolve({
+        status: true,
+      });
+    } catch (error) {
+      console.log('error line 596=>', error);
+      realm3.close();
+      return resolve({
+        status: false,
+      });
+    }
+  });
+};
+
+export const getLastInvoiceNumber = (userPrefix) => {
+  return new Promise(async (resolve, reject) => {
     let realm = new Realm(invoiceOptions);
     try {
       const invoiceList = realm.objects('Invoice').sorted('invoiceDate', true);
@@ -420,6 +844,56 @@ export const getLastInvoiceNumber = (userPrefix = 'AN') => {
       return resolve({
         status: false,
         data: null,
+      });
+    }
+  });
+};
+
+export const getUnsyncedData = () => {
+  return new Promise(async (resolve, reject) => {
+    let realm = new Realm(customerOptions);
+    let customers = [];
+    let invoices = [];
+    try {
+      let customer = realm.objects('Customer');
+      customers = JSON.parse(
+        JSON.stringify(customer.filtered('isSynced == false')),
+      );
+      realm.close();
+    } catch (error) {
+      console.log('errror 862=>', error);
+      realm.close();
+      return resolve({
+        status: true,
+        data: {
+          customer: 0,
+          invoice: 0,
+        },
+      });
+    }
+    let realm2 = new Realm(invoiceOptions);
+    try {
+      let invoice = realm2.objects('Invoice');
+      invoices = JSON.parse(
+        JSON.stringify(invoice.filtered('isSyned == false')),
+      );
+      realm2.close();
+      return resolve({
+        status: true,
+        data: {
+          customer: customers.length,
+          invoice: invoices.length,
+        },
+      });
+    } catch (error) {
+      console.log('errror 884=>', error);
+      realm2.close();
+      return resolve({
+        status: true,
+        data: {
+          customer: 0,
+          invoice: 0,
+        },
       });
     }
   });

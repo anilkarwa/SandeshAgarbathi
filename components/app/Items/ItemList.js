@@ -1,12 +1,6 @@
 import React, {useState, useEffect} from 'react';
-import {FlatList, View, StyleSheet, Dimensions} from 'react-native';
-import {
-  Button,
-  Modal as PaperModal,
-  TextInput as PaperTextInput,
-  Text,
-  IconButton,
-} from 'react-native-paper';
+import {FlatList, View, StyleSheet, TextInput, Dimensions} from 'react-native';
+import {Button, Text, IconButton} from 'react-native-paper';
 import CModal from 'react-native-modal';
 import {theme} from '../../../config/theme';
 import {useAtom} from 'jotai';
@@ -58,10 +52,6 @@ function ItemList({navigation}) {
     </View>
   );
 
-  const setNewQuantity = (val) => {
-    currentSelectedItem.quantity = val;
-  };
-
   return (
     <View style={styles.container}>
       <FlatList
@@ -100,22 +90,25 @@ function ItemList({navigation}) {
         onPress={() => navigation.navigate('ItemSelection')}
       /> */}
       <CModal
-        style={{margin: 0}}
+        style={styles.modalContainer}
         isVisible={showQuantityModal}
         useNativeDriver
         onBackdropPress={() => setShowQuantityModal(false)}
         hasBackdrop>
         <View style={styles.quantityContainer}>
           <Text style={styles.quantityHeading}>Enter item quantity</Text>
-          <PaperTextInput
-            mode="outlined"
-            style={commonStyles.textField}
-            label="Quantity"
-            keyboardType="number-pad"
-            onChangeText={(val) => setQuantity(val)}
-            value={quantity.toString()}
-            onSubmitEditing={updateItemQuantity}
-          />
+          <View style={commonStyles.elementBox}>
+            <Text style={commonStyles.label}>Quantity *</Text>
+            <TextInput
+              style={commonStyles.textInput}
+              placeholder="Enter quantity"
+              keyboardType="number-pad"
+              returnKeyType="done"
+              onChangeText={(val) => setQuantity(val)}
+              value={quantity.toString()}
+              onSubmitEditing={updateItemQuantity}
+            />
+          </View>
           <View style={styles.btnContainer}>
             <Button
               style={styles.nextBtn}
@@ -132,19 +125,19 @@ function ItemList({navigation}) {
       </CModal>
 
       <CModal
-        style={{margin: 0}}
+        style={styles.modalContainer}
         isVisible={showDeleteModal}
         useNativeDriver={true}
         onBackdropPress={() => setShowDeleteModal(false)}
         hasBackdrop>
         <View style={styles.quantityContainer}>
           <IconButton
-            style={{alignSelf: 'center'}}
+            style={styles.centerItems}
             icon="delete-circle-outline"
             color={theme.colors.warning_red}
             size={30}
           />
-          <Text style={{alignSelf: 'center'}}>
+          <Text style={styles.centerItems}>
             Are you sure you want to delete this item?
           </Text>
           <View style={styles.btnContainer}>
@@ -212,6 +205,12 @@ const styles = StyleSheet.create({
   },
   btnContainer: {
     marginTop: 30,
+  },
+  modalContainer: {
+    margin: 0,
+  },
+  centerItems: {
+    alignSelf: 'center',
   },
   emptyList: {
     justifyContent: 'center',

@@ -1,7 +1,14 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {Formik} from 'formik';
-import {ScrollView, View, Text, StyleSheet, SafeAreaView} from 'react-native';
-import {TextInput, Button} from 'react-native-paper';
+import {
+  ScrollView,
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  SafeAreaView,
+} from 'react-native';
+import {Button} from 'react-native-paper';
 import {userAtom} from '../../../Atoms';
 import {useAtom} from 'jotai';
 import Toast from 'react-native-toast-message';
@@ -9,79 +16,148 @@ import Realm from 'realm';
 import CustomerSchema from '../../../Realm/CustomerSchema';
 import {theme} from '../../../config/theme';
 import commonStyles from '../../../assets/styles/common';
+import {Picker} from '@react-native-picker/picker';
 import CustomerValidationSchema from '../../../helpers/forms/CustomerValidation';
+import StateList from '../../../IndiaState.json';
+import {useNavigation} from '@react-navigation/native';
+import {getCustomerGroupList} from '../../../helpers/DataSync/getData';
+
+const initialValues = {
+  customerCode: '',
+  customerName: '',
+  contactPerson: '',
+  group: '',
+  email: '',
+  mobileNumber: '',
+  phoneNumber: '',
+  address_line_1: '',
+  address_line_2: '',
+  address_line_3: '',
+  city: '',
+  state: 'Karnataka',
+  pincode: '',
+  gst: '',
+  remarks: '',
+};
 
 function CustomerAdd(props) {
-  const initialValues = {
-    customerCode: props.item.code || '',
-    customerName: props.item.name || '',
-    contactPerson: props.item.contactPerson || '',
-    group: props.item.groupId || '',
-    email: props.item.email || '',
-    mobileNumber: props.item.mobileNumber || '',
-    phoneNumber: props.item.phoneNumber || '',
-    address_line_1: props.item.addressLine1 || '',
-    address_line_2: props.item.addressLine2 || '',
-    address_line_3: props.item.addressLine3 || '',
-    city: props.item.city || '',
-    state: props.item.state || '',
-    pincode: props.item.pincode || '',
-    gst: props.item.gstNo || '',
-    remarks: props.item.remarks || '',
-  };
+  const navigation = useNavigation();
+  const {
+    customer: item = {},
+    updateCustomer,
+    refreshList,
+  } = props?.route?.params;
+  const [formData, setFormData] = useState({
+    customerCode: item.code || '',
+    customerName: item.name || '',
+    contactPerson: item.contactPerson || '',
+    group: item.groupId || '',
+    email: item.email || '',
+    mobileNumber: item.mobileNumber || '',
+    phoneNumber: item.phoneNumber || '',
+    address_line_1: item.addressLine1 || '',
+    address_line_2: item.addressLine2 || '',
+    address_line_3: item.addressLine3 || '',
+    city: item.city || '',
+    state: item.state || 'Karnataka',
+    pincode: item.pincode || '',
+    gst: item.gstNo || '',
+    remarks: item.remarks || '',
+  });
   const [user] = useAtom(userAtom);
+  const [customerGroups, setCustomerGroups] = useState([]);
+
+  useEffect(() => {
+    loadCustomerGroup();
+  }, []);
+
+  const loadCustomerGroup = async () => {
+    let result = await getCustomerGroupList();
+    if (result && result.status) {
+      let data = result.data.map((item) => {
+        return {label: item.name, value: item.id};
+      });
+      setCustomerGroups(data);
+    }
+  };
+
   const saveCustomer = async (values, setSubmitting) => {
-    setSubmitting(false);
-    let realm = null;
-    try {
-      realm = await Realm.open({
-        path: 'myrealm',
-        schema: [CustomerSchema],
-      });
-      let custObj = {
-        _id: Realm.BSON.ObjectId().toHexString(),
-        id: -1,
-        code: values.customerCode,
-        name: values.customerName,
-        email: values.email,
-        addressLine1: values.address_line_1,
-        addressLine2: values.address_line_2,
-        addressLine3: values.address_line_3,
-        city: values.city,
-        state: values.state,
-        country: 'India',
-        pincode: values.pincode,
-        groupId: values.group,
-        phoneNumber: values.phoneNumber,
-        mobileNumber: values.mobileNumber,
-        contactPerson: values.contactPerson,
-        gstNo: values.gst,
-        addedBy: user?.name,
-        remarks: values.remarks,
-      };
-      if (props.item.id) {
-        custObj.changedBy = user?.name;
-      }
-      realm.write(() => {
-        realm.create('Customer', custObj, 'modified');
-      });
-      Toast.show({
-        text2: 'Customer Added',
-        type: 'success',
-        position: 'bottom',
-      });
+    let custObj = {
+      code: values.customerCode,
+      name: values.customerName,
+      email: values.email,
+      addressLine1: values.address_line_1,
+      addressLine2: values.address_line_2,
+      addressLine3: values.address_line_3,
+      city: values.city,
+      state: values.state,
+      country: 'India',
+      pincode: values.pincode,
+      groupId: values.group ? parseInt(values.group, 10) : 0,
+      phoneNumber: values.phoneNumber,
+      mobileNumber: values.mobileNumber,
+      contactPerson: values.contactPerson,
+      gstNo: values.gst,
+      remarks: values.remarks,
+    };
+    if (item && item._id) {
+      custObj._id = item._id;
+      custObj.changedBy = user?.name;
+      custObj.changedOn = new Date();
+      updateCustomer(custObj);
       setSubmitting(false);
-      realm.close();
-      props.navigation.navigate.goBack();
-    } catch (error) {
-      Toast.show({
-        text2: 'Error Adding Customer',
-        type: 'error',
-        position: 'bottom',
-      });
-      setSubmitting(false);
-      if (realm) {
+      refreshList();
+      navigation.goBack();
+    } else {
+      custObj._id = Realm.BSON.ObjectId().toHexString();
+      custObj.id = -1;
+      custObj.addedBy = user?.name;
+      custObj.addedO = new Date();
+
+      setSubmitting(true);
+      let realm = null;
+      try {
+        realm = await Realm.open({
+          path: 'myrealm',
+          schema: [CustomerSchema],
+        });
+        const exitingCustomers = realm.objects('Customer');
+        const isNotUnique = exitingCustomers.filtered(
+          'code == $0',
+          custObj.code,
+        );
+
+        if (isNotUnique && isNotUnique.length) {
+          Toast.show({
+            text2: 'Customer code should be unique',
+            type: 'error',
+            position: 'bottom',
+          });
+          setSubmitting(false);
+          return false;
+        }
+        realm.write(() => {
+          realm.create('Customer', custObj);
+        });
+        Toast.show({
+          text2: 'Customer Added',
+          type: 'success',
+          position: 'bottom',
+        });
+        setSubmitting(false);
         realm.close();
+        refreshList();
+        navigation.goBack();
+      } catch (error) {
+        Toast.show({
+          text2: 'Error Adding Customer',
+          type: 'error',
+          position: 'bottom',
+        });
+        setSubmitting(false);
+        if (realm) {
+          realm.close();
+        }
       }
     }
   };
@@ -90,7 +166,7 @@ function CustomerAdd(props) {
     <SafeAreaView style={styles.screen}>
       <View style={styles.container}>
         <Formik
-          initialValues={initialValues}
+          initialValues={formData}
           validationSchema={CustomerValidationSchema}
           onSubmit={(values, {setSubmitting}) => {
             saveCustomer(values, setSubmitting);
@@ -103,170 +179,274 @@ function CustomerAdd(props) {
             handleChange,
             handleBlur,
             handleSubmit,
+            setValues,
             isSubmitting,
+            dirty,
+            setTouched,
             /* and other goodies */
           }) => (
-            <ScrollView>
-              <TextInput
-                mode="outlined"
-                style={commonStyles.textField}
-                label="Customer Code"
-                onChangeText={(val) => handleChange('customerCode')(val)}
-                onBlur={handleBlur('customerCode')}
-                value={values.customerCode}
-              />
-              {errors.customerCode && touched.customerCode ? (
-                <Text style={commonStyles.error}>{errors.customerCode}</Text>
-              ) : null}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps={'always'}
+              keyboardDismissMode={'interactive'}>
+              <View style={commonStyles.elementBox}>
+                <Text style={commonStyles.label}>Code *</Text>
+                <TextInput
+                  style={commonStyles.textInput}
+                  placeholder="Enter code"
+                  onChangeText={(val) => handleChange('customerCode')(val)}
+                  onBlur={handleBlur('customerCode')}
+                  returnKeyType="next"
+                  value={values.customerCode}
+                />
+                {errors.customerCode && touched.customerCode ? (
+                  <Text style={commonStyles.error}>{errors.customerCode}</Text>
+                ) : null}
+              </View>
 
-              <TextInput
-                mode="outlined"
-                style={commonStyles.textField}
-                label="Customer Name"
-                onChangeText={(val) => handleChange('customerName')(val)}
-                onBlur={handleBlur('customerName')}
-                value={values.customerName}
-              />
-              {errors.customerName && touched.customerName ? (
-                <Text style={commonStyles.error}>{errors.customerName}</Text>
-              ) : null}
+              <View style={commonStyles.elementBox}>
+                <Text style={commonStyles.label}>Name *</Text>
+                <TextInput
+                  style={commonStyles.textInput}
+                  placeholder="Enter name"
+                  onChangeText={(val) => handleChange('customerName')(val)}
+                  onBlur={handleBlur('customerName')}
+                  returnKeyType="next"
+                  value={values.customerName}
+                />
+                {errors.customerName && touched.customerName ? (
+                  <Text style={commonStyles.error}>{errors.customerName}</Text>
+                ) : null}
+              </View>
 
-              <TextInput
-                mode="outlined"
-                style={commonStyles.textField}
-                label="Customer Group"
-                onChangeText={(val) => handleChange('group')(val)}
-                onBlur={handleBlur('group')}
-                value={values.group}
-              />
-              {errors.group && touched.group ? (
-                <Text style={commonStyles.error}>{errors.group}</Text>
-              ) : null}
+              <View style={commonStyles.elementBox}>
+                <Text style={commonStyles.label}>Group *</Text>
+                <View style={commonStyles.boderBox}>
+                  <Picker
+                    selectedValue={values.group}
+                    style={styles.pickerStyle}
+                    onValueChange={(itemValue, itemIndex) =>
+                      setValues({
+                        ...values,
+                        group: itemValue,
+                      })
+                    }>
+                    <Picker.Item
+                      style={styles.pickerItems}
+                      color={'#A6ACAF'}
+                      label="Select"
+                      value=""
+                    />
+                    {customerGroups.map((e) => (
+                      <Picker.Item
+                        style={styles.pickerItems}
+                        label={e.label}
+                        value={e.value}
+                      />
+                    ))}
+                  </Picker>
+                </View>
+                {errors.group && touched.group ? (
+                  <Text style={commonStyles.error}>{errors.group}</Text>
+                ) : null}
+              </View>
 
-              <TextInput
-                mode="outlined"
-                style={commonStyles.textField}
-                label="Contact Person"
-                onChangeText={(val) => handleChange('contactPerson')(val)}
-                onBlur={handleBlur('contactPerson')}
-                value={values.contactPerson}
-              />
+              <View style={commonStyles.elementBox}>
+                <Text style={commonStyles.label}>Contact Person</Text>
+                <TextInput
+                  style={commonStyles.textInput}
+                  placeholder="Enter contact person"
+                  onChangeText={(val) => handleChange('contactPerson')(val)}
+                  returnKeyType="next"
+                  value={values.contactPerson}
+                />
+              </View>
 
-              <TextInput
-                mode="outlined"
-                style={commonStyles.textField}
-                label="Email"
-                onChangeText={(val) => handleChange('email')(val)}
-                onBlur={handleBlur('email')}
-                value={values.email}
-              />
-              {errors.email && touched.email ? (
-                <Text style={commonStyles.error}>{errors.email}</Text>
-              ) : null}
+              <View style={commonStyles.elementBox}>
+                <Text style={commonStyles.label}>Email *</Text>
+                <TextInput
+                  style={commonStyles.textInput}
+                  placeholder="Enter email"
+                  onChangeText={(val) => handleChange('email')(val)}
+                  returnKeyType="next"
+                  value={values.email}
+                />
+                {errors.email && touched.email ? (
+                  <Text style={commonStyles.error}>{errors.email}</Text>
+                ) : null}
+              </View>
 
-              <TextInput
-                mode="outlined"
-                style={commonStyles.textField}
-                label="Mobile Number"
-                onChangeText={(val) => handleChange('mobileNumber')(val)}
-                onBlur={handleBlur('mobileNumber')}
-                value={values.mobileNumber}
-              />
-              {errors.mobileNumber && touched.mobileNumber ? (
-                <Text style={commonStyles.error}>{errors.mobileNumber}</Text>
-              ) : null}
+              <View style={commonStyles.elementBox}>
+                <Text style={commonStyles.label}>Mobile Number *</Text>
+                <TextInput
+                  style={commonStyles.textInput}
+                  placeholder="Enter mobile number"
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  onChangeText={(val) => handleChange('mobileNumber')(val)}
+                  returnKeyType="next"
+                  value={values.mobileNumber}
+                />
+                {errors.mobileNumber && touched.mobileNumber ? (
+                  <Text style={commonStyles.error}>{errors.mobileNumber}</Text>
+                ) : null}
+              </View>
 
-              <TextInput
-                mode="outlined"
-                style={commonStyles.textField}
-                label="Phone Number"
-                onChangeText={(val) => handleChange('phoneNumber')(val)}
-                onBlur={handleBlur('phoneNumber')}
-                value={values.phoneNumber}
-              />
+              <View style={commonStyles.elementBox}>
+                <Text style={commonStyles.label}>Phone Number </Text>
+                <TextInput
+                  style={commonStyles.textInput}
+                  placeholder="Enter phone number"
+                  keyboardType="phone-pad"
+                  onChangeText={(val) => handleChange('phoneNumber')(val)}
+                  returnKeyType="next"
+                  value={values.phoneNumber}
+                />
+              </View>
 
-              <TextInput
-                mode="outlined"
-                style={commonStyles.textField}
-                label="Addresss Line 1"
-                onChangeText={(val) => handleChange('address_line_1')(val)}
-                onBlur={handleBlur('address_line_1')}
-                value={values.address_line_1}
-              />
+              <View style={commonStyles.elementBox}>
+                <Text style={commonStyles.label}>Address Line 1</Text>
+                <TextInput
+                  style={commonStyles.textInput}
+                  placeholder="Enter address line 1"
+                  onChangeText={(val) => handleChange('address_line_1')(val)}
+                  returnKeyType="next"
+                  value={values.address_line_1}
+                />
+              </View>
 
-              <TextInput
-                mode="outlined"
-                style={commonStyles.textField}
-                label="Address Line 2"
-                onChangeText={(val) => handleChange('address_line_2')(val)}
-                onBlur={handleBlur('address_line_2')}
-                value={values.address_line_2}
-              />
+              <View style={commonStyles.elementBox}>
+                <Text style={commonStyles.label}>Address Line 2</Text>
+                <TextInput
+                  style={commonStyles.textInput}
+                  placeholder="Enter address line 2"
+                  onChangeText={(val) => handleChange('address_line_2')(val)}
+                  returnKeyType="next"
+                  value={values.address_line_2}
+                />
+              </View>
 
-              <TextInput
-                mode="outlined"
-                style={commonStyles.textField}
-                label="Address Line 3"
-                onChangeText={(val) => handleChange('address_line_3')(val)}
-                onBlur={handleBlur('address_line_3')}
-                value={values.address_line_3}
-              />
+              <View style={commonStyles.elementBox}>
+                <Text style={commonStyles.label}>Address Line 3</Text>
+                <TextInput
+                  style={commonStyles.textInput}
+                  placeholder="Enter address line 3"
+                  onChangeText={(val) => handleChange('address_line_3')(val)}
+                  returnKeyType="next"
+                  value={values.address_line_3}
+                />
+              </View>
 
-              <TextInput
-                mode="outlined"
-                style={commonStyles.textField}
-                label="City"
-                onChangeText={(val) => handleChange('city')(val)}
-                onBlur={handleBlur('city')}
-                value={values.city}
-              />
+              <View style={commonStyles.elementBox}>
+                <Text style={commonStyles.label}>City</Text>
+                <TextInput
+                  style={commonStyles.textInput}
+                  placeholder="Enter city"
+                  onChangeText={(val) => handleChange('city')(val)}
+                  returnKeyType="next"
+                  value={values.city}
+                />
+              </View>
 
-              <TextInput
-                mode="outlined"
-                style={commonStyles.textField}
-                label="State"
-                onChangeText={(val) => handleChange('state')(val)}
-                onBlur={handleBlur('state')}
-                value={values.state}
-              />
+              <View style={commonStyles.elementBox}>
+                <Text style={commonStyles.label}>State</Text>
+                <View style={commonStyles.boderBox}>
+                  <Picker
+                    selectedValue={values.state}
+                    style={styles.pickerStyle}
+                    onValueChange={(itemValue, itemIndex) =>
+                      setValues({
+                        ...values,
+                        state: itemValue,
+                      })
+                    }>
+                    <Picker.Item
+                      style={styles.pickerItems}
+                      color={'#A6ACAF'}
+                      label="Select state"
+                      value=""
+                    />
+                    {StateList.map((e) => (
+                      <Picker.Item
+                        style={styles.pickerItems}
+                        label={e.label}
+                        value={e.value}
+                      />
+                    ))}
+                  </Picker>
+                </View>
+              </View>
 
-              <TextInput
-                mode="outlined"
-                style={commonStyles.textField}
-                label="Pincode"
-                onChangeText={(val) => handleChange('pincode')(val)}
-                onBlur={handleBlur('pincode')}
-                value={values.pincode}
-              />
+              <View style={commonStyles.elementBox}>
+                <Text style={commonStyles.label}>Pincode</Text>
+                <TextInput
+                  style={commonStyles.textInput}
+                  placeholder="Enter pincode"
+                  maxLength={5}
+                  onChangeText={(val) => handleChange('pincode')(val)}
+                  returnKeyType="next"
+                  value={values.pincode}
+                />
+              </View>
 
-              <TextInput
-                mode="outlined"
-                style={commonStyles.textField}
-                label="GST No"
-                onChangeText={(val) => handleChange('gst')(val)}
-                onBlur={handleBlur('gst')}
-                value={values.gst}
-              />
+              <View style={commonStyles.elementBox}>
+                <Text style={commonStyles.label}>GST</Text>
+                <TextInput
+                  style={commonStyles.textInput}
+                  placeholder="Enter GST"
+                  maxLength={5}
+                  onChangeText={(val) => handleChange('gst')(val)}
+                  returnKeyType="next"
+                  value={values.gst}
+                />
+              </View>
 
-              <TextInput
-                mode="outlined"
-                multiline
-                style={commonStyles.textField}
-                label="Remarks"
-                onChangeText={(val) => handleChange('remarks')(val)}
-                onBlur={handleBlur('remarks')}
-                value={values.remarks}
-              />
+              <View style={commonStyles.elementBox}>
+                <Text style={commonStyles.label}>Remarks</Text>
+                <TextInput
+                  style={commonStyles.textInput}
+                  placeholder="Enter remarks"
+                  maxLength={5}
+                  onChangeText={(val) => handleChange('remarks')(val)}
+                  returnKeyType="next"
+                  value={values.remarks}
+                />
+              </View>
+
               <View>
-                <Button style={styles.loginBtn} mode="contained">
+                {/* <Button
+                  style={styles.loginBtn}
+                  mode="contained"
+                  onPress={() => setFormData(initialValues)}>
                   Reset
-                </Button>
+                </Button> */}
                 <Button
-                  disabled={isSubmitting || !isValid}
+                  disabled={isSubmitting || !dirty}
                   style={styles.loginBtn}
                   loading={isSubmitting}
                   mode="contained"
-                  onPress={handleSubmit}>
+                  onPress={() => {
+                    setTouched({
+                      customerCode: true,
+                      customerName: true,
+                      contactPerson: true,
+                      group: true,
+                      email: true,
+                      mobileNumber: true,
+                      phoneNumber: true,
+                      address_line_1: true,
+                      address_line_2: true,
+                      address_line_3: true,
+                      city: true,
+                      state: true,
+                      pincode: true,
+                      gst: true,
+                      remarks: true,
+                    });
+                    if (dirty && Object.keys(errors).length === 0) {
+                      handleSubmit();
+                    }
+                  }}>
                   Save
                 </Button>
               </View>
@@ -278,7 +458,7 @@ function CustomerAdd(props) {
   );
 }
 
-export default CustomerAdd;
+export default React.memo(CustomerAdd);
 
 const styles = StyleSheet.create({
   screen: {
@@ -296,11 +476,25 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.medium.fontFamily,
     fontSize: 30,
   },
+  pickerStyle: {
+    width: '100%',
+    height: 50,
+    paddingRight: 0,
+    paddingLeft: 0,
+    fontSize: 10,
+  },
+  pickerItems: {
+    fontFamily: theme.fonts.regular.fontFamily,
+    fontSize: 14,
+  },
   loginBtn: {
     marginTop: 50,
     width: 200,
     height: 50,
     justifyContent: 'center',
     alignSelf: 'center',
+  },
+  dropdown: {
+    marginTop: 18,
   },
 });

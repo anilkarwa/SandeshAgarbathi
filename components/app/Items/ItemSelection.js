@@ -12,7 +12,7 @@ import {
   Text,
   Dimensions,
 } from 'react-native';
-import {Button, TextInput as PaperTextInput} from 'react-native-paper';
+import {Button} from 'react-native-paper';
 import debounce from 'lodash.debounce';
 import Toast from 'react-native-toast-message';
 import CModal from 'react-native-modal';
@@ -205,16 +205,19 @@ function ItemSelection(props) {
         hasBackdrop>
         <View style={styles.quantityContainer}>
           <Text style={styles.quantityHeading}>Enter item quantity</Text>
-          <PaperTextInput
-            ref={quantityRef}
-            mode="outlined"
-            style={commonStyles.textField}
-            label="Quantity"
-            keyboardType="number-pad"
-            onChangeText={(val) => setQuantity(val)}
-            value={quantity.toString()}
-            onSubmitEditing={saveSelectedItemQuantity}
-          />
+          <View style={commonStyles.elementBox}>
+            <Text style={commonStyles.label}>Quantity *</Text>
+            <TextInput
+              ref={quantityRef}
+              style={commonStyles.textInput}
+              placeholder="Enter quantity"
+              keyboardType="number-pad"
+              returnKeyType="done"
+              onChangeText={(val) => setQuantity(val)}
+              value={quantity.toString()}
+              onSubmitEditing={saveSelectedItemQuantity}
+            />
+          </View>
           <View style={styles.btnContainer}>
             <Button
               style={styles.nextBtn}

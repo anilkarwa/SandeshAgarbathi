@@ -1,6 +1,14 @@
 import React from 'react';
-import {Text, View, SafeAreaView, ScrollView, StyleSheet} from 'react-native';
-import {Title, TextInput, Button} from 'react-native-paper';
+import {
+  Text,
+  View,
+  SafeAreaView,
+  TextInput,
+  ScrollView,
+  Image,
+  StyleSheet,
+} from 'react-native';
+import {Title, Button} from 'react-native-paper';
 import {Formik} from 'formik';
 import * as Yup from 'yup';
 import {useNavigation} from 'react-navigation-hooks';
@@ -25,13 +33,13 @@ function Login(props) {
     });
     setSubmitting(false);
     let details = response.response.data;
-    let userDetails = {
-      ...details,
-      prefix: details?.code?.slice(0, 2),
-    };
-    setUser(userDetails);
 
     if (response.response_type === 'success') {
+      let userDetails = {
+        ...details,
+        prefix: details?.code?.slice(0, 2),
+      };
+      setUser(userDetails);
       await AsyncStorage.setItem('@USER', JSON.stringify(userDetails));
       navigationHook('AppStack');
     } else {
@@ -49,6 +57,13 @@ function Login(props) {
         keyboardDismissMode={'interactive'}
         keyboardShouldPersistTaps={'always'}>
         <View style={styles.container}>
+          <View>
+            <Image
+              style={styles.logo}
+              source={require('../../assets/images/android-icon-fg-alt.png')}
+            />
+            <Text style={styles.companyName}>Sandesh Agarbathi</Text>
+          </View>
           <View>
             <Title style={styles.title}>Login</Title>
           </View>
@@ -74,39 +89,40 @@ function Login(props) {
                 /* and other goodies */
               }) => (
                 <>
-                  <TextInput
-                    mode="outlined"
-                    style={commonStyles.textField}
-                    error={errors.email && touched.email}
-                    label="Email"
-                    onChangeText={(val) => handleChange('email')(val)}
-                    onBlur={handleBlur('email')}
-                    returnKeyType="next"
-                    value={values.email}
-                    onSubmitEditing={() =>
-                      setTimeout(() => passwordRef.current?.focus(), 100)
-                    }
-                  />
-                  {errors.email && touched.email ? (
-                    <Text style={commonStyles.error}>{errors.email}</Text>
-                  ) : null}
+                  <View style={commonStyles.elementBox}>
+                    <Text style={commonStyles.label}>Email *</Text>
+                    <TextInput
+                      style={commonStyles.textInput}
+                      placeholder="Enter email"
+                      onChangeText={(val) => handleChange('email')(val)}
+                      onBlur={handleBlur('email')}
+                      returnKeyType="next"
+                      value={values.email}
+                      onSubmitEditing={() =>
+                        setTimeout(() => passwordRef.current?.focus(), 100)
+                      }
+                    />
+                    {errors.email && touched.email ? (
+                      <Text style={commonStyles.error}>{errors.email}</Text>
+                    ) : null}
+                  </View>
 
-                  <TextInput
-                    ref={passwordRef}
-                    secureTextEntry
-                    error={errors.password && touched.password}
-                    mode="outlined"
-                    style={commonStyles.textField}
-                    label="Password"
-                    onChangeText={(val) => handleChange('password')(val)}
-                    onBlur={handleBlur('password')}
-                    value={values.password}
-                    returnKeyType="done"
-                    onSubmitEditing={handleSubmit}
-                  />
-                  {errors.password && touched.password ? (
-                    <Text style={commonStyles.error}>{errors.password}</Text>
-                  ) : null}
+                  <View style={commonStyles.elementBox}>
+                    <Text style={commonStyles.label}>Password *</Text>
+                    <TextInput
+                      style={commonStyles.textInput}
+                      secureTextEntry
+                      placeholder="Enter password"
+                      onChangeText={(val) => handleChange('password')(val)}
+                      onBlur={handleBlur('password')}
+                      value={values.password}
+                      returnKeyType="done"
+                      onSubmitEditing={handleSubmit}
+                    />
+                    {errors.password && touched.password ? (
+                      <Text style={commonStyles.error}>{errors.password}</Text>
+                    ) : null}
+                  </View>
 
                   <Button
                     disabled={isSubmitting || !isValid}
@@ -131,7 +147,6 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.white,
-    alignItems: 'center',
     flexDirection: 'row',
   },
   container: {
@@ -149,5 +164,18 @@ const styles = StyleSheet.create({
     height: 50,
     justifyContent: 'center',
     alignSelf: 'center',
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    resizeMode: 'center',
+    alignSelf: 'center',
+    marginTop: 40,
+  },
+  companyName: {
+    fontSize: 22,
+    fontFamily: theme.fonts.regular.fontFamily,
+    alignSelf: 'center',
+    marginBottom: 60,
   },
 });

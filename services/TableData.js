@@ -21,3 +21,42 @@ export const getCustomerGroups = () => {
     method: 'GET',
   });
 };
+
+export const createCustomer = (customers) => {
+  return apiRequest({
+    apiUrl: `${apiURL.SAVECUSTOMER}`,
+    method: 'POST',
+    payload: customers,
+  });
+};
+
+export const updateCustomer = (customers) => {
+  return apiRequest({
+    apiUrl: `${apiURL.UPDATECUSTOMER}`,
+    method: 'POST',
+    payload: customers,
+  });
+};
+
+export const deleteCustomer = (customers) => {
+  return apiRequest({
+    apiUrl: `${apiURL.CUSTOMER}`,
+    method: 'DELETE',
+    payload: customers,
+  });
+};
+
+export const invoiceList = (data) => {
+  return apiRequest({
+    apiUrl: `${apiURL.INVOICELIST}?prefix=${data.prefix}`,
+    method: 'GET',
+  });
+};
+
+export const saveInvoices = (invoices) => {
+  return apiRequest({
+    apiUrl: `${apiURL.SAVEINVOICE}`,
+    method: 'POST',
+    payload: invoices,
+  });
+};

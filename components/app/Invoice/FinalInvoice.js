@@ -21,7 +21,9 @@ function FinalInvoice(props) {
   const [invoiceDetails, setInvoiceDetails] = useState({
     id: -1,
     invoiceNo: '',
-    invoiceDate: new Date(),
+    invoiceDate: moment(new Date()).format('MM/DD/YYYY HH:mm'),
+    time: moment(new Date()).format('HH:mm'),
+    custCode: selectedCustomer.code,
     partyName: selectedCustomer.name,
     addressLine1: selectedCustomer.addressLine1,
     addressLine2: selectedCustomer.addressLine2,
@@ -30,7 +32,7 @@ function FinalInvoice(props) {
     state: selectedCustomer.state,
     country: selectedCustomer.country,
     pinCode: selectedCustomer.pindcode,
-    addedBy: currentUser.id,
+    addedBy: currentUser.code,
     grossAmt: 0.0,
     cgstAmt: 0.0,
     sgstAmt: 0.0,
@@ -40,7 +42,7 @@ function FinalInvoice(props) {
     discAmt: 0.0,
     agent: currentUser.name,
     remarks: '',
-    prefix: 'AN',
+    prefix: '',
     isSyned: false,
     items: [],
   });
@@ -194,7 +196,7 @@ function FinalInvoice(props) {
         </Text>
         <Text style={styles.space}>
           <Text style={styles.label}>Date:</Text>{' '}
-          {moment(invoiceDetails.invoiceDate).format('DD/MM/YYYY hh:mm')}
+          {moment(invoiceDetails.invoiceDate).format('DD/MM/YYYY HH:mm')}
         </Text>
       </View>
       <View style={styles.section}>

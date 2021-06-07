@@ -1,17 +1,36 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {Text, StyleSheet, View, ScrollView} from 'react-native';
+import {useFocusEffect} from '@react-navigation/native';
 import {FAB, Button, IconButton} from 'react-native-paper';
 import {theme} from '../../../config/theme';
 import {useAtom} from 'jotai';
 import {invoiceCustomer, invoiceItems} from '../../../Atoms';
 import Toast from 'react-native-toast-message';
 import SyncDataModal from '../SyncData/SyncDataModal';
-import {getCustomersCount} from '../../../helpers/DataSync/getData';
+import {
+  getCustomersCount,
+  getUnsyncedData,
+} from '../../../helpers/DataSync/getData';
 
 export const Home = ({navigation}) => {
   const [openSyncModal, setOpenSyncModal] = useState(false);
   const [, setSelectedCustomer] = useAtom(invoiceCustomer);
   const [, setSelectedItems] = useAtom(invoiceItems);
+  const [unSyncedStats, setUnSyncedStats] = useState({});
+
+  useFocusEffect(
+    React.useCallback(() => {
+      getUnSyncedDetails();
+    }, []),
+  );
+
+  const getUnSyncedDetails = async () => {
+    let result = await getUnsyncedData();
+    console.log('result->', result);
+    if (result && result.status) {
+      setUnSyncedStats(result.data);
+    }
+  };
 
   const handleInvoiceCreate = async () => {
     const result = await getCustomersCount();
@@ -52,16 +71,12 @@ export const Home = ({navigation}) => {
       <Text style={styles.name}>Anil Karwa</Text>
       <View style={styles.smallCardContainer}>
         <View style={styles.smallCards}>
-          <Text style={styles.numberText}>500</Text>
-          <Text style={styles.cardText}>Today's Sale</Text>
+          <Text style={styles.numberText}>{unSyncedStats.customer}</Text>
+          <Text style={styles.cardText}>Unsynced Customer</Text>
         </View>
         <View style={styles.smallCards}>
-          <Text style={styles.numberText}>22,000</Text>
-          <Text style={styles.cardText}>Month Sale</Text>
-        </View>
-        <View style={styles.smallCards}>
-          <Text style={styles.numberText}>10</Text>
-          <Text style={styles.cardText}>Today's Invoice</Text>
+          <Text style={styles.numberText}>{unSyncedStats.invoice}</Text>
+          <Text style={styles.cardText}>Unsynced Invoice</Text>
         </View>
       </View>
       <FAB
@@ -111,14 +126,14 @@ const styles = StyleSheet.create({
   },
   smallCardContainer: {
     display: 'flex',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     flexDirection: 'row',
     marginTop: 60,
     marginBottom: 100,
   },
   smallCards: {
     fontSize: 14,
-    width: 100,
+    width: 130,
     height: 100,
     alignItems: 'center',
     justifyContent: 'center',

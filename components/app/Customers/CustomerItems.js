@@ -6,51 +6,94 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import {Avatar} from 'react-native-paper';
+import {isEqual} from 'lodash';
+import {useNavigation} from '@react-navigation/native';
+import {Avatar, IconButton} from 'react-native-paper';
 import {theme} from '../../../config/theme';
 
 function CustomerItems(props) {
+  const navigation = useNavigation();
   const {item, selectedCustomer, onCustomerSelect} = props;
   return (
     <View style={styles.container}>
       <TouchableOpacity
         style={[
-          styles.details,
-          selectedCustomer === item ? styles.selected : null,
+          styles.info,
+          selectedCustomer && props.isSettings === item
+            ? styles.selected
+            : null,
         ]}
         onPress={() => {
-          onCustomerSelect(item);
-          item.selected = !item.selected;
+          if (!props.isSettings) {
+            onCustomerSelect(item);
+            item.selected = !item.selected;
+          }
         }}>
-        <View>
-          <Avatar.Image
-            size={50}
-            source={require('../../../assets/images/user.png')}
-          />
-        </View>
-        <View style={styles.infoContainer}>
-          <Text numberOfLines={1} style={styles.name}>
-            {item.name}
-          </Text>
-          <View style={styles.otherDetailsFlex}>
-            <Text numberOfLines={1} style={styles.otherDetails}>
-              {item.email}
-            </Text>
-            <Text numberOfLines={1} style={styles.otherDetails}>
-              {item.city === '-' ? '' : item.city}
-            </Text>
+        <View style={styles.infoFlex}>
+          <View>
+            <Avatar.Image
+              size={40}
+              source={require('../../../assets/images/user.png')}
+            />
+          </View>
+          <View style={styles.infoContainer}>
+            <View>
+              <Text numberOfLines={1} style={styles.name}>
+                {item.name}
+              </Text>
+            </View>
+            <View style={styles.otherDetailsFlex}>
+              <Text numberOfLines={1} style={styles.otherDetails}>
+                {item.email}
+              </Text>
+              <Text numberOfLines={1} style={styles.otherDetails}>
+                {item.city === '-' ? '' : item.city}
+              </Text>
+            </View>
           </View>
         </View>
+        {props.isSettings ? (
+          <View style={styles.actions}>
+            <IconButton
+              icon="circle-edit-outline"
+              color={theme.colors.primary}
+              size={24}
+              style={styles.actionBtn}
+              onPress={() =>
+                props.parentNavigation.navigate('AddCustomer', {
+                  customer: item,
+                  updateCustomer: props.updateCustomer,
+                  refreshList: props.refreshList,
+                })
+              }
+            />
+
+            <IconButton
+              style={styles.actionBtn}
+              icon="delete-circle-outline"
+              color={theme.colors.warning_red}
+              size={26}
+              onPress={() => props.deleteCustomer(item)}
+            />
+          </View>
+        ) : null}
       </TouchableOpacity>
     </View>
   );
 }
 
-export default React.memo(CustomerItems);
+export default React.memo(CustomerItems, shouldComponentUpdate);
+
+const shouldComponentUpdate = (preveProps, nextProps) => {
+  return (
+    isEqual(preveProps.item, nextProps.item) &&
+    isEqual(preveProps.selectedCustomer, nextProps.selectedCustomer)
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
-    margin: 10,
+    margin: 5,
     borderRadius: theme.roundness,
     backgroundColor: theme.colors.background,
     shadowColor: '#000',
@@ -60,25 +103,29 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.29,
     shadowRadius: 4.65,
-    elevation: 7,
+    elevation: 1,
   },
-  details: {
+  info: {
     flex: 1,
-    padding: 10,
-    flexDirection: 'row',
+    padding: 8,
+    flexDirection: 'column',
+  },
+  infoFlex: {
     alignItems: 'center',
+    flexDirection: 'row',
+    padding: 5,
+    marginBottom: 10,
   },
   selected: {
     backgroundColor: theme.colors.primaryLight,
   },
   infoContainer: {
-    width: '100%',
     maxWidth: Dimensions.get('window').width - 110,
   },
   name: {
     marginLeft: 20,
     marginBottom: 10,
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: theme.fonts.medium.fontFamily,
     fontWeight: theme.fonts.medium.fontWeight,
   },
@@ -90,8 +137,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   otherDetails: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: theme.fonts.regular.fontFamily,
     fontWeight: theme.fonts.regular.fontWeight,
+  },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginLeft: 25,
+    marginRight: 15,
+    borderTopWidth: 0.5,
+    borderTopColor: '#D5D8DC',
+  },
+  actionBtn: {
+    padding: 0,
+    margin: 0,
+    marginTop: 3,
   },
 });
