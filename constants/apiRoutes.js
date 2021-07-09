@@ -1,4 +1,4 @@
-export const baseUrl = 'https://1d14021eea61.ngrok.io';
+export const baseUrl = 'http://103.228.83.52/SACSomMApp';
 
 export const apiURL = {
   LOGIN: '/login',
