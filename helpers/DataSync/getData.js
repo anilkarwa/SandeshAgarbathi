@@ -69,6 +69,7 @@ export const getAllCustomers = () => {
                 changedBy: cust.changedBy,
                 changedOn: cust.changedOn ? new Date(cust.changedOn) : null,
                 remarks: cust.remarks,
+                inActive: cust.inActive,
                 isSynced: true,
               };
               realm.create('Customer', finalObj);
@@ -229,7 +230,6 @@ export const getDeletedCustomers = () => {
           };
           deletedCustomerList.push(deletedCust);
         }
-
         let result = await deleteCustomer(deletedCustomerList);
         if (result.response_type === 'success') {
           resolve({
@@ -270,7 +270,9 @@ export const getCustomerList = (skip, size, search) => {
           search,
         );
       }
-      selectedCustomers = selectedCustomers.filtered('isDeleted == false');
+      selectedCustomers = selectedCustomers.filtered(
+        'isDeleted == false && inActive == "N"',
+      );
       const sorted = selectedCustomers.sorted('name');
       if (sorted && sorted.length) {
         let final = sorted.slice(start, end);
@@ -566,15 +568,21 @@ export const getAllInvoice = (payload) => {
             }
           });
         }
-        realm.close();
-        resolve(true);
+        resolve({
+          status: true,
+        });
       } else {
-        resolve(false);
+        resolve({
+          status: true,
+        });
       }
+      realm.close();
     } catch (error) {
       console.log('errorrr line 572=>', error);
       realm.close();
-      return resolve(false);
+      return resolve({
+        status: false,
+      });
     }
   });
 };
@@ -594,7 +602,7 @@ export const getinvoiceList = (skip, size, search) => {
         );
       }
 
-      const sorted = selectedInvoices.sorted('invoiceDate', true);
+      const sorted = selectedInvoices.sorted('invoiceNo', true);
       if (sorted && sorted.length) {
         let final = sorted.slice(start, end);
         resolve({
@@ -823,9 +831,9 @@ export const getLastInvoiceNumber = (userPrefix) => {
   return new Promise(async (resolve, reject) => {
     let realm = new Realm(invoiceOptions);
     try {
-      const invoiceList = realm.objects('Invoice').sorted('invoiceDate', true);
-      const filteted = invoiceList.filtered('prefix == $0', userPrefix);
-      const sorted = filteted.sorted('invoiceDate', true);
+      const invoicesList = realm.objects('Invoice');
+      const filteted = invoicesList.filtered('prefix == $0', userPrefix);
+      const sorted = filteted.sorted('invoiceNo', true);
       if (sorted && sorted.length) {
         resolve({
           status: true,
@@ -857,7 +865,11 @@ export const getUnsyncedData = () => {
     try {
       let customer = realm.objects('Customer');
       customers = JSON.parse(
-        JSON.stringify(customer.filtered('isSynced == false')),
+        JSON.stringify(
+          customer.filtered(
+            'isSynced == false || isDeleted == true || isUpdated == true',
+          ),
+        ),
       );
       realm.close();
     } catch (error) {

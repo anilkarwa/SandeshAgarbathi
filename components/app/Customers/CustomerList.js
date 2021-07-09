@@ -61,6 +61,7 @@ function CustomerList({navigation, route}) {
       setCustomers([...tempCustomers, ...result?.data?.rows]);
     } else {
       Toast.show({
+        text1: 'Error',
         text2: 'Error loading customers',
         type: 'error',
         position: 'bottom',
@@ -135,12 +136,14 @@ function CustomerList({navigation, route}) {
     let result = await updateCustomer({...customer, isUpdated: true});
     if (result) {
       Toast.show({
+        text1: 'Customer Updated',
         text2: 'Updated customer successfully',
         type: 'success',
         position: 'bottom',
       });
     } else {
       Toast.show({
+        text1: 'Error',
         text2: 'Error updating customers',
         type: 'error',
         position: 'bottom',
@@ -159,12 +162,14 @@ function CustomerList({navigation, route}) {
     if (result) {
       setShowDeleteModal(false);
       Toast.show({
+        text1: 'Delete Successfull',
         text2: 'Deleted customer successfully',
         type: 'success',
         position: 'bottom',
       });
     } else {
       Toast.show({
+        text1: 'Error',
         text2: 'Error deleting customers',
         type: 'error',
         position: 'bottom',
@@ -218,7 +223,6 @@ function CustomerList({navigation, route}) {
                 item={item}
                 isSettings={isSettings}
                 onCustomerSelect={onCustomerSelect}
-                selectedCustomer={selectedCustomer}
                 updateCustomer={updateSelectedCustomer}
                 deleteCustomer={openDeleteConfirmation}
                 refreshList={() => onRefresh()}

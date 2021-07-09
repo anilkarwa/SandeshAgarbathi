@@ -65,6 +65,7 @@ function ItemSelection(props) {
       setIsFetching(false);
     } else {
       Toast.show({
+        text1: 'Error',
         text2: 'Error loading items',
         type: 'error',
         position: 'bottom',

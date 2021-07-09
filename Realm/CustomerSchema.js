@@ -23,6 +23,7 @@ const CustomerSchema = {
     changedBy: 'string?',
     changedOn: 'date?',
     remarks: 'string?',
+    inActive: {type: 'string', default: 'N'},
     isSynced: {type: 'bool', default: false},
     isDeleted: {type: 'bool', default: false},
     isUpdated: {type: 'bool', default: false},

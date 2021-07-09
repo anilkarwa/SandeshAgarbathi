@@ -45,6 +45,7 @@ function SyncDataModal(props) {
     try {
       if (!netInfo.isConnected) {
         Toast.show({
+          text1: 'Error',
           text2: 'No Internet Connection!',
           type: 'error',
           position: 'bottom',
@@ -52,16 +53,12 @@ function SyncDataModal(props) {
         props.handleClose();
         return;
       }
-      //await SyncCustomer();
-      // await SyncCustomerGroup();
-      // await SyncItems();
-      // if (customerFetchStatus === 'success') {
-      await SyncInvoice();
-      // } else {
-      //   setInvoiceFetchStatus('error');
-      // }
+      await SyncCustomer();
+      await SyncCustomerGroup();
+      await SyncItems();
     } catch (error) {
       Toast.show({
+        text1: 'Error',
         text2: 'Error in sync process, Try again!',
         type: 'error',
         position: 'bottom',
@@ -97,6 +94,7 @@ function SyncDataModal(props) {
       }
 
       setCustomerFetchStatus('success');
+      await SyncInvoice();
     } catch (error) {
       setCustomerFetchStatus('error');
     }
@@ -186,6 +184,12 @@ function SyncDataModal(props) {
                 </View>
               </View>
               <View style={styles.itemContainer}>
+                <RenderItemIcon state={invoiceFetchStatus} />
+                <View style={styles.syncItem}>
+                  <Text>Invoices</Text>
+                </View>
+              </View>
+              <View style={styles.itemContainer}>
                 <RenderItemIcon state={customerGroupFetchStatus} />
                 <View style={styles.syncItem}>
                   <Text>Customer Group</Text>
@@ -195,12 +199,6 @@ function SyncDataModal(props) {
                 <RenderItemIcon state={itemFetchStatus} />
                 <View style={styles.syncItem}>
                   <Text>Items</Text>
-                </View>
-              </View>
-              <View style={styles.itemContainer}>
-                <RenderItemIcon state={invoiceFetchStatus} />
-                <View style={styles.syncItem}>
-                  <Text>Invoices</Text>
                 </View>
               </View>
             </View>

@@ -50,6 +50,7 @@ function Invoices(props) {
       setInvoiceList([...tempInvoices, ...result?.data?.rows]);
     } else {
       Toast.show({
+        text1: 'Error',
         text2: 'Error loading invoices',
         type: 'error',
         position: 'bottom',
@@ -233,5 +234,8 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: theme.colors.primary,
+  },
+  emptyFooter: {
+    marginTop: 50,
   },
 });

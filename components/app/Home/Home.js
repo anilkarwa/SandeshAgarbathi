@@ -4,7 +4,7 @@ import {useFocusEffect} from '@react-navigation/native';
 import {FAB, Button, IconButton} from 'react-native-paper';
 import {theme} from '../../../config/theme';
 import {useAtom} from 'jotai';
-import {invoiceCustomer, invoiceItems} from '../../../Atoms';
+import {invoiceCustomer, invoiceItems, userAtom} from '../../../Atoms';
 import Toast from 'react-native-toast-message';
 import SyncDataModal from '../SyncData/SyncDataModal';
 import {
@@ -16,17 +16,17 @@ export const Home = ({navigation}) => {
   const [openSyncModal, setOpenSyncModal] = useState(false);
   const [, setSelectedCustomer] = useAtom(invoiceCustomer);
   const [, setSelectedItems] = useAtom(invoiceItems);
+  const [currentUser] = useAtom(userAtom);
   const [unSyncedStats, setUnSyncedStats] = useState({});
 
   useFocusEffect(
     React.useCallback(() => {
       getUnSyncedDetails();
-    }, []),
+    }, [openSyncModal]),
   );
 
   const getUnSyncedDetails = async () => {
     let result = await getUnsyncedData();
-    console.log('result->', result);
     if (result && result.status) {
       setUnSyncedStats(result.data);
     }
@@ -40,6 +40,7 @@ export const Home = ({navigation}) => {
       navigation.navigate('Customer');
     } else {
       Toast.show({
+        text1: 'Data not synced',
         text2: 'Please sync data to continue!',
         type: 'error',
         position: 'bottom',
@@ -68,7 +69,7 @@ export const Home = ({navigation}) => {
         </Button>
       </View>
       <Text style={styles.heading}>Welcome,</Text>
-      <Text style={styles.name}>Anil Karwa</Text>
+      <Text style={styles.name}>{currentUser.name}</Text>
       <View style={styles.smallCardContainer}>
         <View style={styles.smallCards}>
           <Text style={styles.numberText}>{unSyncedStats.customer}</Text>

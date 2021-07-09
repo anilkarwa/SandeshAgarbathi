@@ -129,7 +129,8 @@ function CustomerAdd(props) {
 
         if (isNotUnique && isNotUnique.length) {
           Toast.show({
-            text2: 'Customer code should be unique',
+            text1: 'Duplicate Customer Code',
+            text2: 'Customer code already exists',
             type: 'error',
             position: 'bottom',
           });
@@ -140,7 +141,8 @@ function CustomerAdd(props) {
           realm.create('Customer', custObj);
         });
         Toast.show({
-          text2: 'Customer Added',
+          text1: 'Customer Added',
+          text2: 'Customer has beed created',
           type: 'success',
           position: 'bottom',
         });
@@ -150,7 +152,8 @@ function CustomerAdd(props) {
         navigation.goBack();
       } catch (error) {
         Toast.show({
-          text2: 'Error Adding Customer',
+          text1: 'Error Saving Customer',
+          text2: 'Some error occured while saving customer',
           type: 'error',
           position: 'bottom',
         });
@@ -382,7 +385,8 @@ function CustomerAdd(props) {
                 <TextInput
                   style={commonStyles.textInput}
                   placeholder="Enter pincode"
-                  maxLength={5}
+                  maxLength={6}
+                  keyboardType="numeric"
                   onChangeText={(val) => handleChange('pincode')(val)}
                   returnKeyType="next"
                   value={values.pincode}
@@ -394,7 +398,6 @@ function CustomerAdd(props) {
                 <TextInput
                   style={commonStyles.textInput}
                   placeholder="Enter GST"
-                  maxLength={5}
                   onChangeText={(val) => handleChange('gst')(val)}
                   returnKeyType="next"
                   value={values.gst}
@@ -406,7 +409,6 @@ function CustomerAdd(props) {
                 <TextInput
                   style={commonStyles.textInput}
                   placeholder="Enter remarks"
-                  maxLength={5}
                   onChangeText={(val) => handleChange('remarks')(val)}
                   returnKeyType="next"
                   value={values.remarks}

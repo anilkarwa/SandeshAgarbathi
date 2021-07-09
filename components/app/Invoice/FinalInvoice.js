@@ -21,7 +21,7 @@ function FinalInvoice(props) {
   const [invoiceDetails, setInvoiceDetails] = useState({
     id: -1,
     invoiceNo: '',
-    invoiceDate: moment(new Date()).format('MM/DD/YYYY HH:mm'),
+    invoiceDate: new Date(),
     time: moment(new Date()).format('HH:mm'),
     custCode: selectedCustomer.code,
     partyName: selectedCustomer.name,
@@ -130,7 +130,8 @@ function FinalInvoice(props) {
       setSelectedCustomer({});
       setSelectedItems([]);
       Toast.show({
-        text2: 'Invoice Saved',
+        text1: 'Invoice Saved',
+        text2: 'New invoice save successfully',
         type: 'success',
         position: 'bottom',
       });
@@ -139,6 +140,7 @@ function FinalInvoice(props) {
     } else {
       setShowConfirmModal(false);
       Toast.show({
+        text1: 'Error',
         text2: 'Error Saving Invoice',
         type: 'error',
         position: 'bottom',
@@ -148,14 +150,12 @@ function FinalInvoice(props) {
 
   const generateInvoiceNumber = async () => {
     try {
-      console.log('userdata==>', currentUser);
       const result = await getLastInvoiceNumber(currentUser.prefix);
-      console.log('result==>', result);
       const invoicePrefixConst = '00000000';
       const invoiceNumberParts = {};
       let finalInvoiceNumber = '';
       const currentYear = moment(new Date()).format('YY');
-      if (result && result.state) {
+      if (result && result.status) {
         invoiceNumberParts.year = result.data.slice(0, 2);
         invoiceNumberParts.currentNumber = result.data.slice(
           4,
@@ -177,7 +177,6 @@ function FinalInvoice(props) {
       finalInvoiceNumber = `${
         invoiceNumberParts.year
       }${'AN'}${invoicePrefixConst.slice(0, paddingLength)}${incrementedValue}`;
-      console.log('finalInvoiceNumber==>', finalInvoiceNumber);
       return finalInvoiceNumber;
     } catch (error) {
       console.log('eror=>', error);
@@ -232,19 +231,22 @@ function FinalInvoice(props) {
       ))}
       <View style={styles.finalAmountContainer}>
         <Text style={styles.finalAmount}>
-          Total Amount: {invoiceDetails.grossAmt}
+          Total Amount: {parseFloat(invoiceDetails.grossAmt).toFixed(2)}
         </Text>
-        <Text style={styles.finalAmount}>SGST: {invoiceDetails.sgstAmt}</Text>
-        <Text style={styles.finalAmount}>CGST: {invoiceDetails.cgstAmt}</Text>
         <Text style={styles.finalAmount}>
-          Grant Total: {invoiceDetails.grandTotolAmt}
+          SGST: {parseFloat(invoiceDetails.sgstAmt).toFixed(2)}
+        </Text>
+        <Text style={styles.finalAmount}>
+          CGST: {parseFloat(invoiceDetails.cgstAmt).toFixed(2)}
+        </Text>
+        <Text style={styles.finalAmount}>
+          Grand Total: {parseFloat(invoiceDetails.grandTotolAmt).toFixed(2)}
         </Text>
       </View>
       <View style={styles.remarksContainer}>
         <TextInput
           mode="outlined"
           label="Remark"
-          multiline
           returnKeyType="done"
           onChangeText={(val) =>
             setInvoiceDetails({

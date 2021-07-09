@@ -13,15 +13,13 @@ import {theme} from '../../../config/theme';
 
 function CustomerItems(props) {
   const navigation = useNavigation();
-  const {item, selectedCustomer, onCustomerSelect} = props;
+  const {item, onCustomerSelect} = props;
   return (
     <View style={styles.container}>
       <TouchableOpacity
         style={[
           styles.info,
-          selectedCustomer && props.isSettings === item
-            ? styles.selected
-            : null,
+          item.selected && !props.isSettings === true ? styles.selected : null,
         ]}
         onPress={() => {
           if (!props.isSettings) {
@@ -85,10 +83,7 @@ function CustomerItems(props) {
 export default React.memo(CustomerItems, shouldComponentUpdate);
 
 const shouldComponentUpdate = (preveProps, nextProps) => {
-  return (
-    isEqual(preveProps.item, nextProps.item) &&
-    isEqual(preveProps.selectedCustomer, nextProps.selectedCustomer)
-  );
+  return isEqual(preveProps.item, nextProps.item);
 };
 
 const styles = StyleSheet.create({

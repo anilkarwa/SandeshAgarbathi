@@ -8,6 +8,10 @@ import {AppLoader, NoInternet, ErrorFallback} from './components/common';
 import {theme} from './config/theme';
 import Toast from 'react-native-toast-message';
 
+if (!__DEV__) {
+  console.log = () => {};
+}
+
 const App = () => {
   const errorHandler = (error, stackTrace) => {
     /* Log the error to an error reporting service */

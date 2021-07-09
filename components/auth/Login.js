@@ -44,7 +44,8 @@ function Login(props) {
       navigationHook('AppStack');
     } else {
       Toast.show({
-        text2: 'Login failed',
+        text1: 'Login Failed',
+        text2: 'Invalid detail, please try again',
         type: 'error',
         position: 'bottom',
       });

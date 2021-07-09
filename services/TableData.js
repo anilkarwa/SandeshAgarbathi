@@ -41,7 +41,7 @@ export const updateCustomer = (customers) => {
 export const deleteCustomer = (customers) => {
   return apiRequest({
     apiUrl: `${apiURL.CUSTOMER}`,
-    method: 'DELETE',
+    method: 'POST',
     payload: customers,
   });
 };
