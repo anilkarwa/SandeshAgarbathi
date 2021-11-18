@@ -24,10 +24,10 @@ function ItemDetails(props) {
           </Text>
           <View style={styles.otherDetailsFlex}>
             <Text numberOfLines={1} style={styles.otherDetails}>
-              Rate: {item.rate}
+              Rate: {parseFloat(item.rate).toFixed(2)}
             </Text>
             <Text numberOfLines={1} style={styles.otherDetails}>
-              Disc: {item.discount}
+              Disc: {parseFloat(item.discount || 0).toFixed(2)}
             </Text>
           </View>
         </View>
