@@ -1,5 +1,5 @@
 {
-  "name": "sandeshaarbathii",
+  "name": "sandeshaarbathinpi",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -32,6 +32,7 @@
     "react-native-modal": "^11.10.0",
     "react-native-paper": "^4.8.1",
     "react-native-paper-dropdown": "^1.0.2",
+    "react-native-print": "^0.9.0",
     "react-native-reanimated": "^2.1.0",
     "react-native-safe-area-context": "^3.2.0",
     "react-native-screens": "^3.1.1",

@@ -369,6 +369,7 @@ export const getAllItems = () => {
                 _id: Realm.BSON.ObjectId().toHexString(),
                 id: item.id,
                 name: item.name,
+                HSNCode: item.HSNCode,
                 code: item.code,
                 rate: item.rate,
                 discount: item.discount,
