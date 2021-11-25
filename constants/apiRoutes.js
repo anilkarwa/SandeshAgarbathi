@@ -1,4 +1,4 @@
-export const baseUrl = 'http://103.228.83.52/SACSomMApp';
+export const baseUrl = 'http://103.12.1.88/Sacsom';
 
 export const apiURL = {
   LOGIN: '/login',
