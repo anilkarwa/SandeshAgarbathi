@@ -37,7 +37,7 @@ function Login(props) {
     if (response.response_type === 'success') {
       let userDetails = {
         ...details,
-        prefix: details?.code?.slice(0, 2),
+        prefix: details?.code?.slice(0, 3)?.toUpperCase(),
       };
       setUser(userDetails);
       await AsyncStorage.setItem('@USER', JSON.stringify(userDetails));

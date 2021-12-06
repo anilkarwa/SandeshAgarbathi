@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity } from 'react-native';
-import { Text, TextInput, Button, IconButton } from 'react-native-paper';
-import { theme } from '../../../config/theme';
+import React, {useState, useEffect} from 'react';
+import {StyleSheet, View, ScrollView, TouchableOpacity} from 'react-native';
+import {Text, TextInput, Button, IconButton} from 'react-native-paper';
+import {theme} from '../../../config/theme';
 import moment from 'moment';
-//import for print html
+import {emailCustomerInvoice} from '../../../services/EmailInvoice';
 import RNPrint from 'react-native-print';
-import { print } from 'react-native-print';
+import Toast from 'react-native-toast-message';
+
 //import end
 
 function InvoiceDetails(props) {
-  const { invoice } = props.route.params;
+  const {invoice} = props.route.params;
 
   const [invoiceDetails] = useState({
     invoiceNo: invoice.invoiceNo,
@@ -33,35 +34,72 @@ function InvoiceDetails(props) {
     agent: invoice.agent,
     remarks: invoice.remarks,
     items: invoice.items,
-    itemId: invoice.itemId,
-    custId: invoice.custId
+    custId: invoice.custId,
+    gstNo: invoice.gstNo,
+    phoneNo: invoice.phoneNo,
   });
-  let data = invoiceDetails.items.map((data) => {
-    return (`
-          
+
+  const emailInvoice = async () => {
+    try {
+      let data = {
+        ...invoiceDetails,
+        grandTotalAmt: invoiceDetails.grandTotolAmt,
+        totalCGSTAmt: invoiceDetails.cgstAmt,
+        totalSGSTAmt: invoiceDetails.sgstAmt,
+        roundOffAmt: invoiceDetails.roundOff,
+        items: invoiceDetails.items.map((e) => {
+          return {
+            ...e,
+            quantity: e.qty,
+          };
+        }),
+      };
+
+      let result = await emailCustomerInvoice({data});
+      if (result) {
+        Toast.show({
+          text1: 'Email sent',
+          text2: 'Invoice has been emailed successfully',
+          type: 'success',
+          position: 'bottom',
+        });
+      } else {
+        Toast.show({
+          text1: 'Error',
+          text2: 'Error sending email',
+          type: 'error',
+          position: 'bottom',
+        });
+      }
+    } catch (err) {}
+  };
+
+  let data = invoiceDetails.items.map((data, index) => {
+    return `
             <div style="justify-content: space-between; display: flex;padding: 2px;">
-            <div class="itemdetail">${data.itemName}</div>
-            <div class="itemdetail">${data.rate}</div>
+            <div class="itemdetail"> ${index + 1} ${data.itemName}</div>
+            <div class="itemdetail">${parseFloat(data.rate).toFixed(2)}</div>
             </div>
             
             <div style="justify-content: space-between; display: flex;">
-            <div class="qty">33074100</div>
+            <div class="qty">${data.HSNCode || ''}</div>
             <div class="qty">${data.qty}</div>
-            <div class="qty">${invoiceDetails.discAmt}</div>
-            <div style="display: inline-block;">${data.grossAmt}</div>
+            <div class="qty">0</div>
+            <div style="display: inline-block;">${parseFloat(
+              data.grossAmt,
+            ).toFixed(2)}</div>
             </div><br>
         
             <div class="qty1">CGST</div>
             <div class="qty1">${data.cgstPer}%</div>
-            <div class="qty1">${Number(data.cgstAmt.toFixed(2))}</div><br>
+            <div class="qty1">${Number(data.cgstAmt.toFixed(1))}</div><br>
 
             <div class="qty1">SGST</div>
             <div class="qty1">${data.sgstPer}%</div>
-            <div class="qty1">${Number(data.sgstAmt.toFixed(2))}</div>
+            <div class="qty1">${Number(data.sgstAmt.toFixed(1))}</div>
             
-    `
-    )
-  })
+    `;
+  });
   // console.log(data)
 
   //print pdf file start**************************************************************************
@@ -94,7 +132,7 @@ function InvoiceDetails(props) {
                   }
           
                   .container {
-                      height: 900px;
+                      height: auto;
                       width: 278px;
                       border: 1px solid black;
                       display: inline-block;
@@ -111,6 +149,7 @@ function InvoiceDetails(props) {
                     font-size:small; 
                     display: inline-block;
                     margin-top: 5px;
+                    margin-bottom: 5px;
                   }
                   .qty{
                     
@@ -137,16 +176,16 @@ function InvoiceDetails(props) {
                           ph: 080-26666474/26666477
                       </p>
                       <p>
-                          Sales Person: Varadaraju
+                          Sales Person: ${invoiceDetails.agent}
                       </p>
                       <div style="margin-top: 10px;">
-                          <h3>! TAX Invoice</h3>
+                          <h3>TAX Invoice</h3>
                       </div>
                       <p>************************************************</p>
-                      <div style="justify-content: space-between; display: flex;>
-                          <p style="display: inline-block;">${invoiceDetails.invoiceDate}</p>
-                          <p style="display: inline-block;">${invoiceDetails.time}</p>
-                          <p style="display: inline-block;">${invoiceDetails.invoiceNo}</p>
+                      <div style="justify-content: space-between; display: flex; align-item: center;>
+                          <span style="display: inline-block;">${invoiceDetails.invoiceDate}</span>
+                          <span style="display: inline-block;">${invoiceDetails.time}</span>
+                          <span style="display: inline-block;">${invoiceDetails.invoiceNo}</span>
                       </div>
                   </div>
           
@@ -155,22 +194,23 @@ function InvoiceDetails(props) {
                           Client Name: ${invoiceDetails.partyName}
                       </p>
                       <p>
-                          Unique Id  : ${invoiceDetails.custId}
+                          Unique Id  : ${invoiceDetails?.custId || '-'}
                       </p>
                       <p>
-                          Phone No   : 1234
+                          Phone No   : ${invoiceDetails?.gstNo || '-'}
                       </p>
                       <p>
-                          GST No     : NO
+                          GST No     : ${invoiceDetails?.phoneNo || '-'}
                       </p>
                       <p>
                           Address    : ${invoiceDetails.addressLine2} 
                       </p>
                   </div>
-                  <div style="margin-top: 30px;display:'space-between">
+                  <div style="text-align: center;"><p>**************************************************</p></div>
+                  <div style="margin-top: 10px;display:'space-between">
                       <div style="display: inline-block; margin-right:90px;" >
                           <p>
-                              SN  DESCRIPTION
+                              SN  Item Name
                           </p>
                       </div>
                       <div style="display: inline-block;margin-left:40px"><p">Rate</p></div>
@@ -193,44 +233,40 @@ function InvoiceDetails(props) {
                   </div>
                   <div style="text-align: center;"><p>**************************************************</p></div>
                   <div style="justify-content: space-between; display: flex;padding: 2px;">
-                      <p style="font-family: Verdana, sans-serif;font-size:medium;">Rs.:</p>
+                      <p style="font-family: Verdana, sans-serif;font-size:medium;">Item Total:</p>
                       <p style="font-family: Verdana, sans-serif;font-size:medium;">${invoiceDetails.grossAmt}</p>
                   </div>
                   <div style="justify-content: space-between; display: flex;padding: 2px;">
-                      <p style="font-family: Verdana, sans-serif;font-size:medium;">T CGST Amt:</p>
+                      <p style="font-family: Verdana, sans-serif;font-size:medium;">CGST Amt:</p>
                       <p style="font-family: Verdana, sans-serif;font-size:medium;">${invoiceDetails.cgstAmt}</p>
                   </div>
                   <div style="justify-content: space-between; display: flex;padding: 2px;">
-                      <p style="font-family: Verdana, sans-serif;font-size:medium;">T SGST Amt:</p>
+                      <p style="font-family: Verdana, sans-serif;font-size:medium;">SGST Amt:</p>
                       <p style="font-family: Verdana, sans-serif;font-size:medium;">${invoiceDetails.sgstAmt}</p>
                   </div>
                   <div style="justify-content: space-between; display: flex;padding: 2px;">
                       <p style="font-family: Verdana, sans-serif;font-size:medium;">Round Off:</p>
                       <p style="font-family: Verdana, sans-serif;font-size:medium;">${invoiceDetails.roundOff}</p>
                   </div>
-                  <div style="justify-content: space-between; display: flex;padding: 2px;">
-                      <p style="font-family: Verdana, sans-serif;font-size:medium;">Grand Total:</p>
-                      <p style="font-family: Verdana, sans-serif;font-size:medium;">${invoiceDetails.grandTotolAmt}</p>
+                  <div style="justify-content: space-between; display: flex;padding: 2px;margin-top: 10px;">
+                      <p style="font-family: Verdana, sans-serif;font-size:26px;">Grand Total:</p>
+                      <p style="font-family: Verdana, sans-serif;font-size:26px;">${invoiceDetails.grandTotolAmt}</p>
                   </div>
               </div>
           </body>
           
-          </html>`
-      })
+          </html>`,
+      });
     } catch (error) {
-      console.log('error is :=>', error)
+      console.log('error is :=>', error);
     }
-
-  }
+  };
   //end of print pdf file************************************************************************
-
-
   return (
-    <View style={{flex:1,backgroundColor:'white'}}>
-
+    <View style={{flex: 1, backgroundColor: 'white'}}>
       <ScrollView style={styles.constainer}>
         <View style={styles.headingContainer}>
-          <Text style={styles.heading}>Invoice</Text>
+          <Text style={styles.heading}>Tax Invoice</Text>
         </View>
         <View style={styles.section}>
           <Text style={styles.space}>
@@ -253,14 +289,20 @@ function InvoiceDetails(props) {
             {invoiceDetails.state} {invoiceDetails.country}{' '}
             {invoiceDetails.pinCode}
           </Text>
+          <Text style={styles.smallSpace}>GST: {invoiceDetails.gstNo}</Text>
+          <Text style={styles.smallSpace}>Phone: {invoiceDetails.phoneNo}</Text>
         </View>
         {invoiceDetails.items.map((item, index) => (
-          <View style={[styles.section, styles.itemContainer]} key={item.itemId}>
+          <View
+            style={[styles.section, styles.itemContainer]}
+            key={item.itemId}>
             <View style={styles.itemDetails}>
               <Text numberOfLines={1} style={[styles.label, styles.space]}>
                 {index + 1}). {item.itemName}
               </Text>
-              <Text style={styles.smallSpace}>Qty: {parseInt(item.qty, 10)}</Text>
+              <Text style={styles.smallSpace}>
+                Qty: {parseInt(item.qty, 10)}
+              </Text>
               <Text style={styles.smallSpace}>
                 Rate: {parseFloat(item.rate).toFixed(2)}
               </Text>
@@ -280,17 +322,23 @@ function InvoiceDetails(props) {
           <Text style={styles.finalAmount}>
             CGST: {parseFloat(invoiceDetails.cgstAmt).toFixed(2)}
           </Text>
-          <Text style={styles.finalAmount}>
-            Grant Total: {parseFloat(invoiceDetails.grandTotolAmt).toFixed(2)}
+          <Text style={[styles.finalAmount, {fontWeight: '500', fontSize: 20}]}>
+            Grand Total: {parseFloat(invoiceDetails.grandTotolAmt).toFixed(2)}
           </Text>
         </View>
         <View style={styles.remarksContainer}>
           <Text>Remarks: {invoiceDetails.remarks}</Text>
         </View>
-
       </ScrollView>
       <View style={styles.invoiceBtn}>
-        <Button mode="contained" onPress={() => printHtmls()}>Print Invoice</Button>
+        <Button style={styles.btn} mode="contained" onPress={printHtmls}>
+          Print
+        </Button>
+        {invoiceDetails.custId ? (
+          <Button style={styles.btn} mode="contained" onPress={emailInvoice}>
+            Email
+          </Button>
+        ) : null}
       </View>
     </View>
   );
@@ -301,7 +349,7 @@ const styles = StyleSheet.create({
   constainer: {
     padding: 10,
     backgroundColor: theme.colors.background,
-    flex:0.9,
+    flex: 0.9,
     // position:'relative',
   },
   headingContainer: {
@@ -404,12 +452,17 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
   },
   invoiceBtn: {
-    width: 270,
+    width: '100%',
     height: 60,
     borderColor: 'gainsboro',
     borderRadius: 6,
     marginTop: 22,
-    marginLeft: 64,
-    flex:0.1,
-  }
+    flex: 0.1,
+    justifyContent: 'space-around',
+    flexDirection: 'row',
+  },
+  btn: {
+    height: 40,
+    minWidth: 100,
+  },
 });

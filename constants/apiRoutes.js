@@ -9,4 +9,5 @@ export const apiURL = {
   CUSTOMERGROUPS: '/customer-groups',
   INVOICELIST: '/getAllInvoice',
   SAVEINVOICE: '/saveInvoice',
+  EMAILINVOICE: '/emailInvoice',
 };

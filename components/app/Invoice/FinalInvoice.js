@@ -32,6 +32,8 @@ function FinalInvoice(props) {
     state: selectedCustomer.state,
     country: selectedCustomer.country,
     pinCode: selectedCustomer.pindcode,
+    gstNo: selectedCustomer.gstNo,
+    phoneNo: selectedCustomer.phoneNumber || selectedCustomer.mobileNumber,
     addedBy: currentUser.code,
     grossAmt: 0.0,
     cgstAmt: 0.0,
@@ -64,8 +66,8 @@ function FinalInvoice(props) {
       let tempSGST = 0.0;
       total = parseFloat(item.rate * item.quantity);
       grossAmt += total;
-      tempCGST = parseFloat(total * item.cgst) / 100;
-      tempSGST = parseFloat(total * item.sgst) / 100;
+      tempCGST = parseFloat(item.cgstTotal);
+      tempSGST = parseFloat(item.sgstTotal);
       cgst += tempCGST;
       sgst += tempSGST;
     }
@@ -78,7 +80,7 @@ function FinalInvoice(props) {
     setInvoiceDetails({
       ...invoiceDetails,
       invoiceNo: invoiceNo,
-      grossAmt: grossAmt,
+      grossAmt,
       cgstAmt: cgst,
       sgstAmt: sgst,
       totalAmt: totalAmt,
@@ -108,7 +110,8 @@ function FinalInvoice(props) {
 
       let obj = {
         itemId: item.id,
-        itemName: item.code,
+        itemName: item.name,
+        HSNCode: item.HSNCode,
         qty: parseInt(item.quantity, 10),
         rate: item.rate,
         grossAmt: grossAmt,
@@ -151,32 +154,32 @@ function FinalInvoice(props) {
   const generateInvoiceNumber = async () => {
     try {
       const result = await getLastInvoiceNumber(currentUser.prefix);
-      const invoicePrefixConst = '00000000';
+      const invoicePrefixConst = '0000000';
       const invoiceNumberParts = {};
       let finalInvoiceNumber = '';
       const currentYear = moment(new Date()).format('YY');
       if (result && result.status) {
         invoiceNumberParts.year = result.data.slice(0, 2);
         invoiceNumberParts.currentNumber = result.data.slice(
-          4,
+          5,
           result.data.length,
         );
       } else {
         invoiceNumberParts.year = currentYear;
-        invoiceNumberParts.currentNumber = '00000000';
+        invoiceNumberParts.currentNumber = '0000000';
       }
       if (parseInt(currentYear, 10) > parseInt(invoiceNumberParts.year, 10)) {
         invoiceNumberParts.year = currentYear;
-        invoiceNumberParts.currentNumber = '00000000';
+        invoiceNumberParts.currentNumber = '0000000';
       }
       const incrementedValue =
         parseInt(invoiceNumberParts.currentNumber, 10) + 1;
       const valueLength = incrementedValue.toString().length;
-      const paddingLength = 8 - valueLength;
+      const paddingLength = 7 - valueLength;
 
-      finalInvoiceNumber = `${
-        invoiceNumberParts.year
-      }${'AN'}${invoicePrefixConst.slice(0, paddingLength)}${incrementedValue}`;
+      finalInvoiceNumber = `${invoiceNumberParts.year}${
+        currentUser.prefix
+      }${invoicePrefixConst.slice(0, paddingLength)}${incrementedValue}`;
       return finalInvoiceNumber;
     } catch (error) {
       console.log('eror=>', error);
@@ -220,7 +223,9 @@ function FinalInvoice(props) {
               {index + 1}). {item.name}
             </Text>
             <Text style={styles.smallSpace}>Qty: {item.quantity}</Text>
-            <Text style={styles.smallSpace}>Rate: {item.rate}</Text>
+            <Text style={styles.smallSpace}>
+              Rate: {parseFloat(item.rate).toFixed(2)}
+            </Text>
           </View>
           <View style={styles.itemTotal}>
             <Text>

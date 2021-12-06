@@ -131,8 +131,25 @@ function ItemSelection(props) {
   };
 
   const saveSelectedItemQuantity = () => {
-    if (quantity !== '' && quantity > 1) {
-      const selected = {...currentSelecteItem, quantity: quantity};
+    if (quantity !== '' && quantity >= 1) {
+      let netTotal = parseFloat(quantity * currentSelecteItem.rate).toFixed(2);
+      let cgstTotal = parseFloat(
+        (netTotal * currentSelecteItem.cgst) / 100,
+      ).toFixed(2);
+      let sgstTotal = parseFloat(
+        (netTotal * currentSelecteItem.sgst) / 100,
+      ).toFixed(2);
+
+      const selected = {
+        ...currentSelecteItem,
+        quantity: quantity,
+        netTotal,
+        cgstTotal,
+        sgstTotal,
+        itemTotal: parseFloat(
+          parseFloat(netTotal) + parseFloat(cgstTotal) + parseFloat(sgstTotal),
+        ).toFixed(2),
+      };
       setSelectedItems([...selectedItems, selected]);
       setCurrentSelectedItem({});
       setQuantity('');

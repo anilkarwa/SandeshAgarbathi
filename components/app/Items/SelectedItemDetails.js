@@ -18,10 +18,13 @@ function SelectedItems(props) {
           </View>
           <View style={styles.otherDetailsFlex}>
             <Text numberOfLines={1} style={styles.otherDetails}>
-              Rate: {item.rate}
+              Rate: {parseFloat(item.rate).toFixed(2)}
             </Text>
             <Text numberOfLines={1} style={styles.otherDetails}>
-              Disc: {item.discount}
+              Tax:{' '}
+              {parseFloat(
+                parseFloat(item.cgstTotal) + parseFloat(item.sgstTotal),
+              ).toFixed(2)}
             </Text>
           </View>
           <View style={styles.otherDetailsFlex}>
@@ -29,7 +32,7 @@ function SelectedItems(props) {
               Qty: {item.quantity}
             </Text>
             <Text numberOfLines={1} style={styles.otherDetails}>
-              Total: {parseFloat(item.rate * item.quantity).toFixed(2)}
+              Total: {item.itemTotal}
             </Text>
           </View>
         </View>

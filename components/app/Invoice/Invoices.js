@@ -105,7 +105,7 @@ function Invoices(props) {
 
   const renderEmptyComponent = () => (
     <View style={styles.emptyList}>
-      <Text>No Customer(s) found</Text>
+      <Text>No Invoice(s) found</Text>
     </View>
   );
 
@@ -237,5 +237,10 @@ const styles = StyleSheet.create({
   },
   emptyFooter: {
     marginTop: 50,
+  },
+  emptyList: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 500,
   },
 });

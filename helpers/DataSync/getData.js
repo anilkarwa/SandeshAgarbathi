@@ -372,6 +372,8 @@ export const getAllItems = () => {
                 HSNCode: item.HSNCode,
                 code: item.code,
                 rate: item.rate,
+                cgst: item.cgst,
+                sgst: item.sgst,
                 discount: item.discount,
                 remarks: item.remarks,
               };
@@ -520,7 +522,7 @@ export const getAllInvoice = (payload) => {
               let invoiceItems = [];
               for (let iv of item.items) {
                 let obj = {
-                  itemId: iv.invoiceItemId,
+                  itemId: iv.itemId,
                   itemName: iv.itemName,
                   qty: iv.quantity,
                   rate: iv.rate,
@@ -564,6 +566,8 @@ export const getAllInvoice = (payload) => {
                 prefix: item.prefix,
                 isSyned: true,
                 items: invoiceItems,
+                gstNo: item.gstNo,
+                phoneNo: item.phoneNo,
               };
               realm.create('Invoice', finalObj);
             }

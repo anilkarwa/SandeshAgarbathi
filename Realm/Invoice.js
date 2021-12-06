@@ -30,6 +30,8 @@ const InvoiceSchema = {
     items: {type: 'list', objectType: 'SelectedItem'},
     addedBy: 'string?',
     addedOn: {type: 'date?', default: new Date()},
+    gstNo: {type: 'string?', default: ''},
+    phoneNo: {type: 'string?', default: ''},
     changedBy: 'string?',
     changedOn: 'date?',
   },
@@ -41,6 +43,7 @@ const SelectedItemSchema = {
   properties: {
     itemId: 'int?',
     itemName: 'string?',
+    HSNCode: 'string?',
     qty: 'int?',
     rate: 'float?',
     grossAmt: {type: 'float?', default: 0.0},
