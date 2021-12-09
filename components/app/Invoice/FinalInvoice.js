@@ -41,7 +41,7 @@ function FinalInvoice(props) {
     totalAmt: 0.0,
     grandTotolAmt: 0.0,
     roundOff: 0.0,
-    discAmt: 0.0,
+    discAmt: selectedCustomer.discAmt,
     agent: currentUser.name,
     remarks: '',
     prefix: '',
@@ -60,16 +60,19 @@ function FinalInvoice(props) {
     let totalAmt = 0.0;
     let roundOff = 0.0;
     let grantTotal = 0.0;
+    let totalDisc = 0.0;
+
     for (let item of selectedItems) {
       let total = 0.0;
       let tempCGST = 0.0;
       let tempSGST = 0.0;
-      total = parseFloat(item.rate * item.quantity);
+      total = parseFloat(item.netTotal);
       grossAmt += total;
       tempCGST = parseFloat(item.cgstTotal);
       tempSGST = parseFloat(item.sgstTotal);
       cgst += tempCGST;
       sgst += tempSGST;
+      totalDisc += parseFloat(item.discAmt);
     }
     totalAmt = parseFloat(parseFloat(grossAmt + cgst + sgst).toFixed(2));
     grantTotal = Math.round(totalAmt);
@@ -84,6 +87,7 @@ function FinalInvoice(props) {
       cgstAmt: cgst,
       sgstAmt: sgst,
       totalAmt: totalAmt,
+      discAmt: totalDisc,
       grandTotolAmt: grantTotal,
       roundOff: roundOff,
       prefix: currentUser.prefix,
@@ -100,8 +104,8 @@ function FinalInvoice(props) {
     let tempItems = [];
     let tempInvoice = {...invoiceDetails};
     for (let item of selectedItems) {
-      let grossAmt = parseFloat(item.rate * item.quantity);
-      let netAmt = parseFloat(item.rate * item.quantity);
+      let grossAmt = parseFloat(item.netTotal);
+      let netAmt = parseFloat(item.netTotal);
       let cgstAmt = parseFloat(netAmt * item.cgst) / 100;
       let sgstAmt = parseFloat(netAmt * item.sgst) / 100;
       let totalAmt = parseFloat(
@@ -111,12 +115,13 @@ function FinalInvoice(props) {
       let obj = {
         itemId: item.id,
         itemName: item.name,
+        UOMID: item.UOMID,
         HSNCode: item.HSNCode,
         qty: parseInt(item.quantity, 10),
         rate: item.rate,
         grossAmt: grossAmt,
-        disPer: 0,
-        disAmt: 0.0,
+        disPer: item.discPer,
+        disAmt: item.discAmt,
         netAmt: netAmt,
         cgstPer: item.cgst,
         cgstAmt: cgstAmt,
@@ -127,7 +132,6 @@ function FinalInvoice(props) {
       tempItems.push(obj);
     }
     tempInvoice.items = tempItems;
-
     let result = await addNewInvoice(tempInvoice);
     if (result) {
       setSelectedCustomer({});
@@ -205,16 +209,17 @@ function FinalInvoice(props) {
         <Text style={[styles.label, styles.space]}>
           {invoiceDetails.partyName}
         </Text>
-        <Text style={styles.smallSpace}>GST: {selectedCustomer.gstNo}</Text>
         <Text style={styles.smallSpace}>
-          {invoiceDetails.mobileNumber || selectedCustomer.phoneNumber}
-        </Text>
-        <Text style={styles.smallSpace}>
-          {invoiceDetails.addressLine1} {invoiceDetails.addressLine2}{' '}
-          {invoiceDetails.addressLine3} {invoiceDetails.city}{' '}
-          {invoiceDetails.state} {invoiceDetails.country}{' '}
+         {invoiceDetails.addressLine1} {invoiceDetails.addressLine2}{' '}
+          {invoiceDetails.addressLine3} {invoiceDetails.city}{' - '}
           {selectedCustomer.pinCode}
         </Text>
+        <Text style={[styles.smallSpace, {fontWeight: '700'}]}>
+          Phone: {invoiceDetails.mobileNumber || selectedCustomer.phoneNumber}
+        </Text>
+        <Text style={[styles.smallSpace]}>Email: {selectedCustomer.email}</Text>
+        <Text style={[styles.smallSpace, {fontWeight: '700'}]}>GST: {selectedCustomer.gstNo}</Text>
+       
       </View>
       {selectedItems.map((item, index) => (
         <View style={[styles.section, styles.itemContainer]} key={item._id}>
@@ -226,10 +231,19 @@ function FinalInvoice(props) {
             <Text style={styles.smallSpace}>
               Rate: {parseFloat(item.rate).toFixed(2)}
             </Text>
+            <Text style={styles.smallSpace}>
+              Disc: {parseFloat(item.discPer).toFixed(1)}%  {parseFloat(item.discAmt).toFixed(2)}
+            </Text>
+            <Text style={styles.smallSpace}>
+              CGST: {parseFloat(item.cgst).toFixed(1)}%  {parseFloat(item.cgstTotal).toFixed(2)}
+            </Text>
+            <Text style={styles.smallSpace}>
+              SGST: {parseFloat(item.sgst).toFixed(1)}%  {parseFloat(item.sgstTotal).toFixed(2)}
+            </Text>
           </View>
           <View style={styles.itemTotal}>
             <Text>
-              Total: {parseFloat(item.rate * item.quantity).toFixed(2)}
+              Total: {parseFloat(item.netTotal).toFixed(2)}
             </Text>
           </View>
         </View>

@@ -21,6 +21,7 @@ import {
   getAllInvoice,
   updateInvoiceCustomerData,
   getUnSyncedInvoice,
+  getCompanyDetails,
 } from '../../../helpers/DataSync/getData';
 import {useAtom} from 'jotai';
 import {userAtom} from '../../../Atoms';
@@ -34,6 +35,7 @@ function SyncDataModal(props) {
   const [customerGroupFetchStatus, setCustomerGroupFetchStatus] =
     useState('pending');
   const [invoiceFetchStatus, setInvoiceFetchStatus] = useState('pending');
+  const [companyFetchStatus, setCompanyFetchStatus] = useState('pending');
 
   useEffect(() => {
     if (props.open) {
@@ -53,6 +55,7 @@ function SyncDataModal(props) {
         props.handleClose();
         return;
       }
+      await SyncCompany();
       await SyncCustomer();
       await SyncCustomerGroup();
       await SyncItems();
@@ -65,6 +68,19 @@ function SyncDataModal(props) {
       });
     }
   };
+
+  const SyncCompany = async () => {
+    try {
+      let companyInfo = await getCompanyDetails();
+      if(!companyInfo) {
+        throw new Error('Error saving company info');
+      }
+      setCompanyFetchStatus('success');
+    }catch(err) {
+      console.log('error=>', err)
+      setCompanyFetchStatus('error');
+    }
+  }
 
   const SyncCustomer = async () => {
     try {
@@ -177,6 +193,12 @@ function SyncDataModal(props) {
           <Dialog.Title>Sync Progress</Dialog.Title>
           <Dialog.Content>
             <View>
+              <View style={styles.itemContainer}>
+                <RenderItemIcon state={companyFetchStatus} />
+                <View style={styles.syncItem}>
+                  <Text>Company</Text>
+                </View>
+              </View>
               <View style={styles.itemContainer}>
                 <RenderItemIcon state={customerFetchStatus} />
                 <View style={styles.syncItem}>

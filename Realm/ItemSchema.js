@@ -7,6 +7,7 @@ const ItemSchema = {
     name: 'string',
     HSNCode: 'string',
     rate: 'float',
+    UOMID: 'int?',
     cgst: {type: 'float', default: 2.5},
     sgst: {type: 'float', default: 2.5},
     discount: 'float?',

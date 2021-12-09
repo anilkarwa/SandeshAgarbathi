@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {View, StyleSheet, TouchableOpacity, Text} from 'react-native';
 import {
   Avatar,
@@ -17,10 +17,13 @@ import {DrawerContentScrollView, DrawerItem} from '@react-navigation/drawer';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useNavigation} from 'react-navigation-hooks';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {getCompanyData} from '../helpers/DataSync/getData';
+import { useFocusEffect } from '@react-navigation/native';
 
 export const DrawerContent = (props) => {
   const {navigate} = useNavigation();
   const [user] = useAtom(userAtom);
+  const [company, setCompany] = useState({});
   const [userProfile] = useState(require('../assets/images/user.png'));
 
   const logoutUser = async () => {
@@ -30,6 +33,23 @@ export const DrawerContent = (props) => {
     });
     navigate('AuthStack');
   };
+
+  const getCompanyInfo = async () => {
+    try{
+      let result = await getCompanyData();
+      if(result.status) {
+        setCompany(result.data[0] || {});
+      }
+    }catch(err){
+      console.log('company data error')
+    }
+  }
+
+  useFocusEffect(
+    React.useCallback(() => {
+      getCompanyInfo();
+    }, [])
+  );
 
   return (
     <>
@@ -124,7 +144,7 @@ export const DrawerContent = (props) => {
                   fontSize: 16,
                   marginTop: -5,
                 }}>
-                Sandesh Agarbathi Co.
+                {company?.name}
               </Text>
             </View>
 

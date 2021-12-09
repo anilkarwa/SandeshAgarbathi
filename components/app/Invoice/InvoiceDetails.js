@@ -6,17 +6,19 @@ import moment from 'moment';
 import {emailCustomerInvoice} from '../../../services/EmailInvoice';
 import RNPrint from 'react-native-print';
 import Toast from 'react-native-toast-message';
+import {getCompanyData} from '../../../helpers/DataSync/getData';
 
 //import end
 
 function InvoiceDetails(props) {
   const {invoice} = props.route.params;
-
+  const [company, setCompany] = useState({});
   const [invoiceDetails] = useState({
     invoiceNo: invoice.invoiceNo,
     invoiceDate: moment(new Date(invoice.invoiceDate)).format('DD/MM/YYYY'),
     time: invoice.time,
     partyName: invoice.partyName,
+    email: invoice.email,
     addressLine1: invoice.addressLine1,
     addressLine2: invoice.addressLine2,
     addressLine3: invoice.addressLine3,
@@ -39,6 +41,21 @@ function InvoiceDetails(props) {
     phoneNo: invoice.phoneNo,
   });
 
+  const getCompanyInfo = async () => {
+    try{
+      let result = await getCompanyData();
+      if(result.status) {
+        setCompany(result.data[0] || {});
+      }
+    }catch(err){
+      console.log('company data error')
+    }
+  }
+
+  useEffect(() => {
+    getCompanyInfo();
+  }, []);
+
   const emailInvoice = async () => {
     try {
       let data = {
@@ -51,6 +68,8 @@ function InvoiceDetails(props) {
           return {
             ...e,
             quantity: e.qty,
+            discAmt: e.disAmt,
+            discPer: e.disPer
           };
         }),
       };
@@ -59,14 +78,14 @@ function InvoiceDetails(props) {
       if (result) {
         Toast.show({
           text1: 'Email sent',
-          text2: 'Invoice has been emailed successfully',
+          text2: `${result.response.data}`,
           type: 'success',
           position: 'bottom',
         });
       } else {
         Toast.show({
           text1: 'Error',
-          text2: 'Error sending email',
+          text2: `Error sending email`,
           type: 'error',
           position: 'bottom',
         });
@@ -84,7 +103,7 @@ function InvoiceDetails(props) {
             <div style="justify-content: space-between; display: flex;">
             <div class="qty">${data.HSNCode || ''}</div>
             <div class="qty">${data.qty}</div>
-            <div class="qty">0</div>
+            <div class="qty">${parseFloat(data.disAmt).toFixed(2)}</div>
             <div style="display: inline-block;">${parseFloat(
               data.grossAmt,
             ).toFixed(2)}</div>
@@ -92,11 +111,11 @@ function InvoiceDetails(props) {
         
             <div class="qty1">CGST</div>
             <div class="qty1">${data.cgstPer}%</div>
-            <div class="qty1">${Number(data.cgstAmt.toFixed(1))}</div><br>
+            <div class="qty1">${Number(data.cgstAmt.toFixed(2))}</div><br>
 
             <div class="qty1">SGST</div>
             <div class="qty1">${data.sgstPer}%</div>
-            <div class="qty1">${Number(data.sgstAmt.toFixed(1))}</div>
+            <div class="qty1">${Number(data.sgstAmt.toFixed(2))}</div>
             
     `;
   });
@@ -165,15 +184,12 @@ function InvoiceDetails(props) {
           <body>
               <div class="container">
                   <div style="text-align: center; margin: 8px;">
-                      <h3>SANDESH AGARBATHI CO.</h3>
+                      <h3><strong>${company?.name}</strong></h3>
                       <p>
-                          9310 7th Main Road, J.C Industrial Estate Banglore-560062
+                        ${company?.address1} ${company?.address2} ${company?.address3} ${company?.address4} ${company?.address5}
                       </p>
                       <p>
-                          GSTIN: 29AADFS6799R1ZU
-                      </p>
-                      <p>
-                          ph: 080-26666474/26666477
+                          <strong>GSTIN: ${company?.gstNo}</strong>
                       </p>
                       <p>
                           Sales Person: ${invoiceDetails.agent}
@@ -191,29 +207,30 @@ function InvoiceDetails(props) {
           
                   <div style="padding:2px">
                       <p>
-                          Client Name: ${invoiceDetails.partyName}
+                          <strong>${invoiceDetails.partyName}</strong>
                       </p>
                       <p>
                           Unique Id  : ${invoiceDetails?.custId || '-'}
                       </p>
                       <p>
-                          Phone No   : ${invoiceDetails?.gstNo || '-'}
+                          Address    : ${invoiceDetails.addressLine1} ${invoiceDetails.addressLine2} ${invoiceDetails.addressLine3} ${invoiceDetails.city} - ${invoiceDetails.pinCode}
                       </p>
                       <p>
-                          GST No     : ${invoiceDetails?.phoneNo || '-'}
+                          Phone No   : ${invoiceDetails?.phoneNo || '-'}
                       </p>
                       <p>
-                          Address    : ${invoiceDetails.addressLine2} 
+                          <strong>GST No     : ${invoiceDetails?.gstNo || '-'}</strong>
                       </p>
+                     
                   </div>
                   <div style="text-align: center;"><p>**************************************************</p></div>
                   <div style="margin-top: 10px;display:'space-between">
-                      <div style="display: inline-block; margin-right:90px;" >
+                      <div style="display: flex; align-items: center; justify-content: space-between;">
                           <p>
-                              SN  Item Name
+                              SN  ITEM NAME
                           </p>
+                          <p>RATE</p>
                       </div>
-                      <div style="display: inline-block;margin-left:40px"><p">Rate</p></div>
                       
                       <div style="justify-content: space-between; display: flex;">
                       <div style="display: inline-block;"><p>HSN NO</p></div>
@@ -275,7 +292,7 @@ function InvoiceDetails(props) {
           </Text>
           <Text style={styles.space}>
             <Text style={styles.label}>Date:</Text>{' '}
-            {moment(invoiceDetails.invoiceDate).format('DD/MM/YYYY')}{' '}
+            {invoiceDetails.invoiceDate} {' '}
             {invoiceDetails.time}
           </Text>
         </View>
@@ -285,12 +302,13 @@ function InvoiceDetails(props) {
           </Text>
           <Text style={styles.smallSpace}>
             {invoiceDetails.addressLine1} {invoiceDetails.addressLine2}{' '}
-            {invoiceDetails.addressLine3} {invoiceDetails.city}{' '}
-            {invoiceDetails.state} {invoiceDetails.country}{' '}
+            {invoiceDetails.addressLine3} {invoiceDetails.city}{' - '}
             {invoiceDetails.pinCode}
           </Text>
-          <Text style={styles.smallSpace}>GST: {invoiceDetails.gstNo}</Text>
-          <Text style={styles.smallSpace}>Phone: {invoiceDetails.phoneNo}</Text>
+          <Text style={[styles.smallSpace, {fontWeight: '700'}]}>Phone: {invoiceDetails.phoneNo}</Text>
+          <Text style={styles.smallSpace}>Email: {invoiceDetails?.email}</Text>
+          <Text style={[styles.smallSpace, {fontWeight: '700'}]}>GST: {invoiceDetails.gstNo}</Text>
+          
         </View>
         {invoiceDetails.items.map((item, index) => (
           <View
@@ -305,6 +323,15 @@ function InvoiceDetails(props) {
               </Text>
               <Text style={styles.smallSpace}>
                 Rate: {parseFloat(item.rate).toFixed(2)}
+              </Text>
+              <Text style={styles.smallSpace}>
+                Disc: {parseFloat(item.disPer).toFixed(1)}%  {parseFloat(item.disAmt).toFixed(2)}
+              </Text>
+              <Text style={styles.smallSpace}>
+                CGST: {parseFloat(item.cgstPer).toFixed(1)}%  {parseFloat(item.cgstAmt).toFixed(2)}
+              </Text>
+              <Text style={styles.smallSpace}>
+                SGST: {parseFloat(item.sgstPer).toFixed(1)}%  {parseFloat(item.sgstAmt).toFixed(2)}
               </Text>
             </View>
             <View style={styles.itemTotal}>
@@ -347,7 +374,7 @@ export default InvoiceDetails;
 
 const styles = StyleSheet.create({
   constainer: {
-    padding: 10,
+    paddingHorizontal: 10,
     backgroundColor: theme.colors.background,
     flex: 0.9,
     // position:'relative',

@@ -6,7 +6,6 @@ import {theme} from '../../../config/theme';
 import {useAtom} from 'jotai';
 import {invoiceItems} from '../../../Atoms';
 import ItemDetail from './SelectedItemDetails';
-import {FAB} from 'react-native-paper';
 import commonStyles from '../../../assets/styles/common';
 
 function ItemList({navigation}) {
@@ -14,12 +13,14 @@ function ItemList({navigation}) {
   const [showQuantityModal, setShowQuantityModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [quantity, setQuantity] = useState('');
+  const [disc, setDisc] = useState('');
   const [currentSelectedItem, setCurrentSelectedItem] = useState({});
 
   const retrieveDataOnScroll = () => {};
 
   const editItem = (item) => {
     setCurrentSelectedItem(item);
+    setDisc(item.discPer)
     setQuantity(item.quantity);
     setShowQuantityModal(true);
   };
@@ -37,7 +38,30 @@ function ItemList({navigation}) {
   };
 
   const updateItemQuantity = () => {
-    let currentItem = {...currentSelectedItem, quantity: quantity};
+    let netTotal = parseFloat(quantity * currentSelectedItem.rate).toFixed(2);
+    let discAmt = (parseFloat(netTotal) * disc) / 100;
+    netTotal = parseFloat(parseFloat(netTotal) - discAmt).toFixed(2);
+    let cgstTotal = parseFloat(
+      (netTotal * currentSelectedItem.cgst) / 100,
+    ).toFixed(2);
+    let sgstTotal = parseFloat(
+      (netTotal * currentSelectedItem.sgst) / 100,
+    ).toFixed(2);
+    
+
+    const currentItem = {
+      ...currentSelectedItem,
+      quantity: quantity,
+      netTotal,
+      cgstTotal,
+      sgstTotal,
+      discPer: parseFloat(parseFloat(disc).toFixed(2)),
+      discAmt,
+      itemTotal: parseFloat(
+        parseFloat(netTotal) + parseFloat(cgstTotal) + parseFloat(sgstTotal),
+      ).toFixed(2),
+    };
+
     let index = selectedItems.findIndex((e) => e.id === currentItem.id);
     if (index > -1) {
       selectedItems[index] = currentItem;
@@ -106,6 +130,15 @@ function ItemList({navigation}) {
               returnKeyType="done"
               onChangeText={(val) => setQuantity(val)}
               value={quantity.toString()}
+            />
+            <Text style={commonStyles.label}>Disc% *</Text>
+            <TextInput
+              style={commonStyles.textInput}
+              placeholder="Enter Disc%"
+              keyboardType="number-pad"
+              returnKeyType="done"
+              onChangeText={(val) => setDisc(val)}
+              value={disc.toString()}
               onSubmitEditing={updateItemQuantity}
             />
           </View>

@@ -7,7 +7,6 @@ import {
   Dimensions,
 } from 'react-native';
 import _ from 'lodash';
-import {Avatar} from 'react-native-paper';
 import {theme} from '../../../config/theme';
 import Icons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -27,7 +26,7 @@ function ItemDetails(props) {
               Rate: {parseFloat(item.rate).toFixed(2)}
             </Text>
             <Text numberOfLines={1} style={styles.otherDetails}>
-              Disc: {parseFloat(item.discount || 0).toFixed(2)}
+              Disc: {parseFloat(item.discAmt || 0).toFixed(2)}
             </Text>
           </View>
         </View>

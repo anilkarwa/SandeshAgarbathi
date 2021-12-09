@@ -37,6 +37,7 @@ function ItemSelection(props) {
   const [search, setSearch] = useState('');
   const [showQuantityModal, setShowQuantityModal] = useState(false);
   const [quantity, setQuantity] = useState('');
+  const [disc, setDisc] = useState('');
   const [isFetching, setIsFetching] = useState(false);
   const quantityRef = React.useRef(null);
 
@@ -124,6 +125,7 @@ function ItemSelection(props) {
 
   const onItemClick = (item) => {
     setCurrentSelectedItem(item);
+    setDisc(item?.disc || 0);
     setShowQuantityModal(true);
     setTimeout(() => {
       quantityRef.current.focus();
@@ -133,6 +135,8 @@ function ItemSelection(props) {
   const saveSelectedItemQuantity = () => {
     if (quantity !== '' && quantity >= 1) {
       let netTotal = parseFloat(quantity * currentSelecteItem.rate).toFixed(2);
+      let discAmt = (parseFloat(netTotal) * disc) / 100;
+      netTotal = parseFloat(parseFloat(netTotal) - discAmt).toFixed(2);
       let cgstTotal = parseFloat(
         (netTotal * currentSelecteItem.cgst) / 100,
       ).toFixed(2);
@@ -146,11 +150,19 @@ function ItemSelection(props) {
         netTotal,
         cgstTotal,
         sgstTotal,
+        discPer: parseFloat(parseFloat(disc).toFixed(2)),
+        discAmt,
         itemTotal: parseFloat(
           parseFloat(netTotal) + parseFloat(cgstTotal) + parseFloat(sgstTotal),
         ).toFixed(2),
       };
-      setSelectedItems([...selectedItems, selected]);
+      let itemIndex =  selectedItems?.findIndex( e => e._id === currentSelecteItem._id);
+      if(itemIndex > -1) {
+        selectedItems[itemIndex] = selected;
+        setSelectedItems([...selectedItems]);
+      }else {
+        setSelectedItems([...selectedItems, selected]);
+      }
       setCurrentSelectedItem({});
       setQuantity('');
       setShowQuantityModal(false);
@@ -222,7 +234,7 @@ function ItemSelection(props) {
         onBackdropPress={() => setShowQuantityModal(false)}
         hasBackdrop>
         <View style={styles.quantityContainer}>
-          <Text style={styles.quantityHeading}>Enter item quantity</Text>
+          <Text style={styles.quantityHeading}>Enter Item Quantity</Text>
           <View style={commonStyles.elementBox}>
             <Text style={commonStyles.label}>Quantity *</Text>
             <TextInput
@@ -233,6 +245,18 @@ function ItemSelection(props) {
               returnKeyType="done"
               onChangeText={(val) => setQuantity(val)}
               value={quantity.toString()}
+            />
+          </View>
+          <Text style={styles.quantityHeading}>Enter Item Disc</Text>
+          <View style={commonStyles.elementBox}>
+            <Text style={commonStyles.label}>Disc%</Text>
+            <TextInput
+              style={commonStyles.textInput}
+              placeholder="Enter disc %"
+              keyboardType="number-pad"
+              returnKeyType="done"
+              onChangeText={(val) => setDisc(val)}
+              value={disc.toString()}
               onSubmitEditing={saveSelectedItemQuantity}
             />
           </View>

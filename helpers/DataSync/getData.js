@@ -7,11 +7,13 @@ import {
   deleteCustomer,
   invoiceList,
   saveInvoices,
+  getCompayInfo,
 } from '../../services/TableData';
 import CustomerSchema from '../../Realm/CustomerSchema';
 import ItemSchema from '../../Realm/ItemSchema';
 import CustomerGroupSchema from '../../Realm/CustomerGroup';
 import {InvoiceSchema, SelectedItemSchema} from '../../Realm/Invoice';
+import CompanySchema from '../../Realm/Company';
 import Realm from 'realm';
 
 const customerOptions = {
@@ -33,6 +35,11 @@ const invoiceOptions = {
   path: 'myrealm',
   schema: [InvoiceSchema, SelectedItemSchema],
 };
+
+const companyOptions = {
+  path: 'myrealm',
+  schema: [CompanySchema]
+}
 
 export const getAllCustomers = () => {
   return new Promise(async (resolve, reject) => {
@@ -370,6 +377,7 @@ export const getAllItems = () => {
                 id: item.id,
                 name: item.name,
                 HSNCode: item.HSNCode,
+                UOMID: item.UOMID,
                 code: item.code,
                 rate: item.rate,
                 cgst: item.cgst,
@@ -524,6 +532,7 @@ export const getAllInvoice = (payload) => {
                 let obj = {
                   itemId: iv.itemId,
                   itemName: iv.itemName,
+                  HSNCode: iv.HSNCode,
                   qty: iv.quantity,
                   rate: iv.rate,
                   grossAmt: iv.grossAmt,
@@ -546,6 +555,7 @@ export const getAllInvoice = (payload) => {
                 invoiceDate: new Date(item.invoiceDate),
                 time: item.time,
                 custId: item.custId,
+                email: item.email,
                 partyName: item.partyName,
                 addressLine1: item.addressLine1,
                 addressLine2: item.addressLine2,
@@ -674,13 +684,14 @@ export const getUnSyncedInvoice = () => {
           for (let item of inv.items) {
             itemObj.push({
               itemId: item.itemId,
+              UOMID: item.UOMID,
               itemName: item.itemName,
               quantity: item.qty,
               rate: parseFloat(parseFloat(item.rate).toFixed(2)),
               grossAmt: parseFloat(parseFloat(item.grossAmt).toFixed(2)),
-              disPer: item.disPer,
-              disAmt: item.discAmt
-                ? parseFloat(parseFloat(item.discAmt).toFixed(2))
+              discPer: item.disPer,
+              discAmt: item.disAmt
+                ? parseFloat(parseFloat(item.disAmt).toFixed(2))
                 : 0,
               netAmt: parseFloat(parseFloat(item.netAmt).toFixed(2)),
               cgstPer: item.cgstPer,
@@ -710,7 +721,7 @@ export const getUnSyncedInvoice = () => {
             totalAmt: parseFloat(parseFloat(inv.totalAmt).toFixed(2)),
             grandTotalAmt: parseFloat(parseFloat(inv.grandTotolAmt).toFixed(2)),
             roundOffAmt: parseFloat(parseFloat(inv.roundOff).toFixed(2)),
-            discAmt: inv.disAmt ? inv.discAmt : 0,
+            discAmt: inv.discAmt ? inv.discAmt : 0,
             agent: inv.agent,
             remarks: inv.remarks,
             prefix: inv.prefix,
@@ -720,6 +731,7 @@ export const getUnSyncedInvoice = () => {
           };
           newInvoice.push(newCust);
         }
+       
         let result = await saveInvoices(newInvoice);
         if (result.response_type === 'success') {
           resolve({
@@ -911,6 +923,74 @@ export const getUnsyncedData = () => {
           customer: 0,
           invoice: 0,
         },
+      });
+    }
+  });
+};
+
+export const getCompanyDetails = () => {
+  return new Promise(async (resolve, reject) => {
+    let realm = null;
+    try {
+      realm = new Realm(companyOptions);
+      let result = await getCompayInfo();
+      if (result.response_type === 'success') {
+        const {data} = result.response;
+        if (data) {
+          // create realm object
+          realm.write(() => {
+            realm.deleteAll();
+            let finalObj = {
+              _id: Realm.BSON.ObjectId().toHexString(),
+              name: data.companyName,
+              address1:  data.add1,
+              address2: data.add2,
+              address3: data.add3,
+              address4: data.add4,
+              address5: data.add5,
+              phoneNo: data.phoneNo,
+              gstNo: data.gst,
+            };
+            realm.create('Company', finalObj);
+            
+          });
+        }
+        realm.close();
+        resolve(true);
+      } else {
+        resolve(false);
+      }
+    } catch (error) {
+      console.log('errorrr line 959=>', error);
+      realm?.close();
+      return resolve(false);
+    }
+  });
+};
+
+export const getCompanyData = () => {
+  return new Promise(async (resolve, reject) => {
+    let realm = new Realm(companyOptions);
+    try {
+      const company = realm.objects('Company');
+      if (company) {
+        resolve({
+          status: true,
+          data: JSON.parse(JSON.stringify(company)),
+        });
+      } else {
+        resolve({
+          status: true,
+          data: {},
+        });
+      }
+      realm.close();
+    } catch (error) {
+      console.log('errorrr line 984=>', error);
+      realm.close();
+      return resolve({
+        status: false,
+        data: {},
       });
     }
   });

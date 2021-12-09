@@ -52,7 +52,7 @@ function InvoiceItem(props) {
           <View>
             <Text style={styles.otherText}>Invoice Value</Text>
             <Text style={styles.otherBoldText}>
-              {parseFloat(item.totalAmt).toFixed(2)}
+              {parseFloat(item.grandTotolAmt).toFixed(2)}
             </Text>
           </View>
         </View>

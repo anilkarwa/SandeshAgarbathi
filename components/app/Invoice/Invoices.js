@@ -46,7 +46,6 @@ function Invoices(props) {
     if (result && result.status) {
       let tempInvoices = lVisible === 0 ? [] : invoiceList;
       setInvoiceCount(result?.data?.count);
-
       setInvoiceList([...tempInvoices, ...result?.data?.rows]);
     } else {
       Toast.show({

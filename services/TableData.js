@@ -53,6 +53,13 @@ export const invoiceList = (data) => {
   });
 };
 
+export const getCompayInfo = (data) => {
+  return apiRequest({
+    apiUrl: `${apiURL.COMPANYINFO}`,
+    method: 'GET',
+  });
+};
+
 export const saveInvoices = (invoices) => {
   return apiRequest({
     apiUrl: `${apiURL.SAVEINVOICE}`,
