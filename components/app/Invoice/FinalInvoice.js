@@ -28,10 +28,11 @@ function FinalInvoice(props) {
     addressLine1: selectedCustomer.addressLine1,
     addressLine2: selectedCustomer.addressLine2,
     addressLine3: selectedCustomer.addressLine3,
+    addressLine4: selectedCustomer.addressLine4,
     city: selectedCustomer.city,
     state: selectedCustomer.state,
     country: selectedCustomer.country,
-    pinCode: selectedCustomer.pindcode,
+    pinCode: selectedCustomer.pincode,
     gstNo: selectedCustomer.gstNo,
     phoneNo: selectedCustomer.phoneNumber || selectedCustomer.mobileNumber,
     addedBy: currentUser.code,
@@ -211,11 +212,11 @@ function FinalInvoice(props) {
         </Text>
         <Text style={styles.smallSpace}>
          {invoiceDetails.addressLine1} {invoiceDetails.addressLine2}{' '}
-          {invoiceDetails.addressLine3} {invoiceDetails.city}{' - '}
-          {selectedCustomer.pinCode}
+          {invoiceDetails.addressLine3} {invoiceDetails.addressLine4} {invoiceDetails.city}{' - '}
+          {invoiceDetails.pinCode}
         </Text>
         <Text style={[styles.smallSpace, {fontWeight: '700'}]}>
-          Phone: {invoiceDetails.mobileNumber || selectedCustomer.phoneNumber}
+          Mobile No: {invoiceDetails.mobileNumber || selectedCustomer.phoneNumber}
         </Text>
         <Text style={[styles.smallSpace]}>Email: {selectedCustomer.email}</Text>
         <Text style={[styles.smallSpace, {fontWeight: '700'}]}>GST: {selectedCustomer.gstNo}</Text>

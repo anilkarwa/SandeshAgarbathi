@@ -25,9 +25,9 @@ function ItemDetails(props) {
             <Text numberOfLines={1} style={styles.otherDetails}>
               Rate: {parseFloat(item.rate).toFixed(2)}
             </Text>
-            <Text numberOfLines={1} style={styles.otherDetails}>
+            {/* <Text numberOfLines={1} style={styles.otherDetails}>
               Disc: {parseFloat(item.discAmt || 0).toFixed(2)}
-            </Text>
+            </Text> */}
           </View>
         </View>
         {selected ? (

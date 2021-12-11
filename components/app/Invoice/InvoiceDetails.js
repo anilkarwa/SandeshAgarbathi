@@ -11,6 +11,7 @@ import {getCompanyData} from '../../../helpers/DataSync/getData';
 //import end
 
 function InvoiceDetails(props) {
+  const [isEmailLoading, setIsEmailLoading] = useState(false);
   const {invoice} = props.route.params;
   const [company, setCompany] = useState({});
   const [invoiceDetails] = useState({
@@ -22,10 +23,11 @@ function InvoiceDetails(props) {
     addressLine1: invoice.addressLine1,
     addressLine2: invoice.addressLine2,
     addressLine3: invoice.addressLine3,
+    addressLine4: invoice.addressLine4,
     city: invoice.city,
     state: invoice.state,
     country: invoice.country,
-    pinCode: invoice.pindcode,
+    pinCode: invoice.pinCode,
     grossAmt: Number(invoice.grossAmt.toFixed(2)),
     cgstAmt: Number(invoice.cgstAmt.toFixed(2)),
     sgstAmt: Number(invoice.sgstAmt.toFixed(2)),
@@ -58,6 +60,7 @@ function InvoiceDetails(props) {
 
   const emailInvoice = async () => {
     try {
+      setIsEmailLoading(true);
       let data = {
         ...invoiceDetails,
         grandTotalAmt: invoiceDetails.grandTotolAmt,
@@ -90,7 +93,10 @@ function InvoiceDetails(props) {
           position: 'bottom',
         });
       }
-    } catch (err) {}
+      setIsEmailLoading(false);
+    } catch (err) {
+      setIsEmailLoading(false);
+    }
   };
 
   let data = invoiceDetails.items.map((data, index) => {
@@ -213,10 +219,10 @@ function InvoiceDetails(props) {
                           Unique Id  : ${invoiceDetails?.custId || '-'}
                       </p>
                       <p>
-                          Address    : ${invoiceDetails.addressLine1} ${invoiceDetails.addressLine2} ${invoiceDetails.addressLine3} ${invoiceDetails.city} - ${invoiceDetails.pinCode}
-                      </p>
+                          Address    : ${invoiceDetails.addressLine1} ${invoiceDetails.addressLine2} ${invoiceDetails.addressLine3}  ${invoiceDetails.addressLine4} ${invoiceDetails.city} - ${invoiceDetails.pinCode}
+                      </p> 
                       <p>
-                          Phone No   : ${invoiceDetails?.phoneNo || '-'}
+                          Mobile No   : ${invoiceDetails?.phoneNo || '-'}
                       </p>
                       <p>
                           <strong>GST No     : ${invoiceDetails?.gstNo || '-'}</strong>
@@ -302,10 +308,10 @@ function InvoiceDetails(props) {
           </Text>
           <Text style={styles.smallSpace}>
             {invoiceDetails.addressLine1} {invoiceDetails.addressLine2}{' '}
-            {invoiceDetails.addressLine3} {invoiceDetails.city}{' - '}
+            {invoiceDetails.addressLine3} {invoiceDetails.addressLine4} {invoiceDetails.city}{' - '}
             {invoiceDetails.pinCode}
           </Text>
-          <Text style={[styles.smallSpace, {fontWeight: '700'}]}>Phone: {invoiceDetails.phoneNo}</Text>
+          <Text style={[styles.smallSpace, {fontWeight: '700'}]}>Mobile No: {invoiceDetails.phoneNo}</Text>
           <Text style={styles.smallSpace}>Email: {invoiceDetails?.email}</Text>
           <Text style={[styles.smallSpace, {fontWeight: '700'}]}>GST: {invoiceDetails.gstNo}</Text>
           
@@ -335,7 +341,7 @@ function InvoiceDetails(props) {
               </Text>
             </View>
             <View style={styles.itemTotal}>
-              <Text>Total: {parseFloat(item.rate * item.qty).toFixed(2)}</Text>
+              <Text>Total: {parseFloat(item.netAmt).toFixed(2)}</Text>
             </View>
           </View>
         ))}
@@ -362,7 +368,7 @@ function InvoiceDetails(props) {
           Print
         </Button>
         {invoiceDetails.custId ? (
-          <Button style={styles.btn} mode="contained" onPress={emailInvoice}>
+          <Button style={styles.btn} mode="contained" onPress={emailInvoice} loading={isEmailLoading} disabled={isEmailLoading}>
             Email
           </Button>
         ) : null}

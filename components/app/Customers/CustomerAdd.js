@@ -47,6 +47,7 @@ function CustomerAdd(props) {
     updateCustomer,
     refreshList,
   } = props?.route?.params;
+
   const [formData, setFormData] = useState({
     customerCode: item.code || '',
     customerName: item.name || '',
@@ -58,6 +59,7 @@ function CustomerAdd(props) {
     address_line_1: item.addressLine1 || '',
     address_line_2: item.addressLine2 || '',
     address_line_3: item.addressLine3 || '',
+    address_line_4: item.addressLine4 || '',
     city: item.city || '',
     state: item.state || 'Karnataka',
     pincode: item.pincode || '',
@@ -89,6 +91,7 @@ function CustomerAdd(props) {
       addressLine1: values.address_line_1,
       addressLine2: values.address_line_2,
       addressLine3: values.address_line_3,
+      addressLine4: values.address_line_4,
       city: values.city,
       state: values.state,
       country: 'India',
@@ -339,6 +342,16 @@ function CustomerAdd(props) {
                   value={values.address_line_3}
                 />
               </View>
+              <View style={commonStyles.elementBox}>
+                <Text style={commonStyles.label}>Address Line 4</Text>
+                <TextInput
+                  style={commonStyles.textInput}
+                  placeholder="Enter address line 4"
+                  onChangeText={(val) => handleChange('address_line_4')(val)}
+                  returnKeyType="next"
+                  value={values.address_line_4}
+                />
+              </View>
 
               <View style={commonStyles.elementBox}>
                 <Text style={commonStyles.label}>City</Text>
@@ -439,6 +452,7 @@ function CustomerAdd(props) {
                       address_line_1: true,
                       address_line_2: true,
                       address_line_3: true,
+                      address_line_4: true,
                       city: true,
                       state: true,
                       pincode: true,
