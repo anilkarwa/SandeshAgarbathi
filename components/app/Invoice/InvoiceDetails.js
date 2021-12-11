@@ -225,6 +225,9 @@ function InvoiceDetails(props) {
                           Mobile No   : ${invoiceDetails?.phoneNo || '-'}
                       </p>
                       <p>
+                          Email   : ${invoiceDetails?.email || '-'}
+                      </p>
+                      <p>
                           <strong>GST No     : ${invoiceDetails?.gstNo || '-'}</strong>
                       </p>
                      
