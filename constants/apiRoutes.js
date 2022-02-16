@@ -10,4 +10,5 @@ export const apiURL = {
   INVOICELIST: '/getAllInvoice',
   SAVEINVOICE: '/saveInvoice',
   EMAILINVOICE: '/emailInvoice',
+  COMPANYINFO: '/Company',
 };
