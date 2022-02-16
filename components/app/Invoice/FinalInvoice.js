@@ -161,7 +161,7 @@ function FinalInvoice(props) {
       const invoicePrefixConst = '0000000';
       const invoiceNumberParts = {};
       let finalInvoiceNumber = '';
-      const currentYear = moment(new Date()).format('YY');
+      const currentYear = moment().month('April').startOf('month').format('YY');
       if (result && result.status) {
         invoiceNumberParts.year = result.data.slice(0, 2);
         invoiceNumberParts.currentNumber = result.data.slice(
