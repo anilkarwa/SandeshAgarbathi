@@ -155,6 +155,19 @@ function FinalInvoice(props) {
       });
     }
   };
+  
+  const getFinancialYear = (date) => {
+    let currentYear = date.year();
+    let month = date.month();
+  
+    // If the month is less than or equal to 3, then the financial year is the previous year.
+    if (month <= 3) {
+      return (currentYear - 1).toString().slice(2,4);
+    }
+  
+    // Otherwise, the financial year is the current year.
+    return currentYear.toString().slice(2,4);
+  }
 
   const generateInvoiceNumber = async () => {
     try {
@@ -162,7 +175,7 @@ function FinalInvoice(props) {
       const invoicePrefixConst = '0000000';
       const invoiceNumberParts = {};
       let finalInvoiceNumber = '';
-      const currentYear = moment().month('April').startOf('month').format('YY');
+      const currentYear = getFinancialYear(moment());
       if (result && result.status) {
         invoiceNumberParts.year = result.data.slice(0, 2);
         invoiceNumberParts.currentNumber = result.data.slice(
